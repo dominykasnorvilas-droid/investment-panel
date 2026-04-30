@@ -1,0 +1,2628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Strategy Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" crossorigin="anonymous"></script>
+<style>
+:root {
+  --bg: #0a0c0f;
+  --surface: #111318;
+  --surface2: #181c22;
+  --surface3: #1f242d;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --muted2: #9ca3af;
+  --accent: #c8f050;
+  --accent2: #a8d440;
+  --gold: #e8b84b;
+  --red: #f05050;
+  --green: #50e0a0;
+  --blue: #50b4f0;
+  --purple: #a07cf0;
+  --nav-w: 200px;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* NAV */
+#nav {
+  width: var(--nav-w);
+  min-width: var(--nav-w);
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.nav-logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo img { height: 26px; width: auto; }
+.nav-logo .tagline {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.nav-section-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 16px 20px 6px;
+  font-family: var(--font-mono);
+}
+
+.nav-items { flex: 1; overflow-y: auto; padding-bottom: 12px; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted2);
+  border-left: 2px solid transparent;
+  position: relative;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: rgba(200, 240, 80, 0.05);
+}
+.nav-item .icon { font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-item .badge {
+  margin-left: auto;
+  background: var(--surface3);
+  color: var(--muted2);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.nav-item.active .badge { background: rgba(200,240,80,0.15); color: var(--accent); }
+
+.nav-bottom {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+.nav-bottom .date { color: var(--muted2); }
+
+/* MAIN */
+#main {
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+/* PAGES */
+.page { display: none; padding: 28px 32px; min-height: 100%; animation: fadeIn 0.2s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* PAGE HEADER */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.page-subtitle { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: var(--font-mono); }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.btn:hover { border-color: var(--border2); background: var(--surface3); }
+.btn-accent {
+  background: var(--accent);
+  color: #0a0c0f;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.btn-accent:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover { background: var(--surface2); border-color: var(--border); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+
+/* GRID */
+.grid { display: grid; gap: 16px; }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-12 { grid-template-columns: repeat(12, 1fr); }
+.span-2 { grid-column: span 2; }
+.span-3 { grid-column: span 3; }
+.span-4 { grid-column: span 4; }
+.span-5 { grid-column: span 5; }
+.span-6 { grid-column: span 6; }
+.span-7 { grid-column: span 7; }
+.span-8 { grid-column: span 8; }
+.span-12 { grid-column: span 12; }
+
+/* CARD */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border2); }
+.card-sm { padding: 14px 16px; }
+.card-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+.card-title-lg {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+/* KPI */
+.kpi-val {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.kpi-label { font-size: 10px; color: var(--muted); margin-top: 5px; font-family: var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.kpi-delta {
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+}
+.delta-up { background: rgba(80,224,160,0.12); color: var(--green); }
+.delta-warn { background: rgba(232,184,75,0.12); color: var(--gold); }
+.delta-down { background: rgba(240,80,80,0.12); color: var(--red); }
+.delta-blue { background: rgba(80,180,240,0.12); color: var(--blue); }
+
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.badge-active { background: rgba(80,224,160,0.12); color: var(--green); }
+.badge-watchlist { background: rgba(232,184,75,0.12); color: var(--gold); }
+.badge-rejected { background: rgba(240,80,80,0.12); color: var(--red); }
+.badge-pipeline { background: rgba(80,180,240,0.12); color: var(--blue); }
+.badge-compounder { background: rgba(160,124,240,0.12); color: var(--purple); }
+.badge-attack { background: rgba(232,184,75,0.12); color: var(--gold); }
+.badge-flow { background: rgba(200,240,80,0.12); color: var(--accent); }
+.badge-yes { background: rgba(80,224,160,0.12); color: var(--green); }
+.badge-neutral { background: rgba(232,184,75,0.12); color: var(--gold); }
+.badge-no { background: rgba(240,80,80,0.12); color: var(--red); }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.1s; cursor: pointer; }
+tbody tr:hover td { background: rgba(255,255,255,0.025); }
+.td-mono { font-family: var(--font-mono); font-size: 12px; }
+.td-name { font-weight: 600; font-family: var(--font-display); }
+.td-ticker { font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+
+/* SCORE BAR */
+.score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.score-bar { height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--blue)); }
+.score-num { font-family: var(--font-mono); font-size: 13px; min-width: 24px; }
+
+/* STATUS INDICATOR */
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; display: inline-block; margin-right: 5px; }
+.dot-in-range { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.dot-above { background: var(--gold); }
+.dot-below { background: var(--blue); }
+.dot-waiting { background: var(--muted); }
+
+/* DIVIDER */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* FORM ELEMENTS */
+input, select, textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+select option { background: var(--surface2); }
+label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.04em; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.form-group { display: flex; flex-direction: column; }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 90%;
+  max-width: 680px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: fadeIn 0.2s ease;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.modal-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.modal-close:hover { color: var(--text); background: var(--surface2); }
+
+/* TABS */
+.tabs { display: flex; gap: 2px; background: var(--surface2); padding: 4px; border-radius: var(--radius); margin-bottom: 20px; }
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.15s;
+  color: var(--muted2);
+  font-family: var(--font-mono);
+}
+.tab.active { background: var(--surface3); color: var(--text); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* RATING BREAKDOWN */
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.rating-row:last-child { border-bottom: none; }
+.rating-label { flex: 1; font-size: 12px; color: var(--muted2); }
+.rating-weight { font-family: var(--font-mono); font-size: 10px; color: var(--muted); width: 24px; text-align: right; }
+.rating-val { font-family: var(--font-mono); font-size: 13px; font-weight: 600; width: 40px; text-align: right; }
+.rating-bar-wrap { width: 80px; }
+.rating-bar { height: 3px; border-radius: 2px; background: var(--accent); }
+
+/* COMPARE GRID */
+.compare-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+.compare-col-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.compare-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface);
+  color: var(--muted2);
+}
+.compare-chip.selected { border-color: var(--accent); color: var(--accent); background: rgba(200,240,80,0.05); }
+.compare-chip .remove { margin-left: 2px; font-size: 10px; opacity: 0.6; }
+.compare-chip:hover .remove { opacity: 1; }
+
+.compare-table { width: 100%; border-collapse: collapse; }
+.compare-table th {
+  padding: 10px 14px;
+  font-size: 11px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+}
+.compare-table th.company-col {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.compare-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+.compare-table .metric-name {
+  font-size: 11px;
+  color: var(--muted2);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.compare-table .best { color: var(--green); font-weight: 700; }
+.compare-table .worst { color: var(--red); }
+
+/* FLOW page */
+.flow-phase {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+  cursor: default;
+}
+.flow-phase.current {
+  border-color: var(--accent);
+  background: rgba(200,240,80,0.04);
+}
+.flow-phase-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.flow-phase-name { font-weight: 700; font-size: 13px; font-family: var(--font-display); }
+.flow-phase-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+.flow-action { font-size: 11px; color: var(--accent); font-family: var(--font-mono); margin-top: 6px; }
+
+/* CHECKLIST */
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-cb { width: 15px; height: 15px; border: 1px solid var(--border2); border-radius: 3px; flex-shrink: 0; margin-top: 2px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; font-size: 9px; background: var(--surface2); }
+.checklist-cb.checked { background: var(--accent); border-color: var(--accent); color: #000; }
+.checklist-text { flex: 1; font-size: 12px; color: var(--muted2); line-height: 1.5; }
+.checklist-text.checked { text-decoration: line-through; color: var(--muted); }
+
+/* NOTIFICATION */
+.notice {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.notice-info { background: rgba(80,180,240,0.08); border: 1px solid rgba(80,180,240,0.2); color: var(--muted2); }
+.notice-warn { background: rgba(232,184,75,0.08); border: 1px solid rgba(232,184,75,0.2); color: var(--muted2); }
+.notice-success { background: rgba(80,224,160,0.08); border: 1px solid rgba(80,224,160,0.2); color: var(--muted2); }
+.notice-icon { font-size: 14px; flex-shrink: 0; }
+
+/* SECTION LABEL */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+}
+
+/* DETAIL HERO */
+.detail-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.detail-score-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(200,240,80,0.05);
+}
+.detail-score-ring .score { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--accent); line-height: 1; }
+.detail-score-ring .label { font-size: 9px; color: var(--muted); font-family: var(--font-mono); }
+.detail-meta { flex: 1; }
+.detail-name { font-family: var(--font-display); font-size: 24px; font-weight: 800; line-height: 1.1; margin-bottom: 6px; }
+.detail-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.detail-short-thesis { font-size: 13px; color: var(--muted2); line-height: 1.6; max-width: 600px; }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+.empty-state .label { font-size: 13px; margin-bottom: 8px; color: var(--muted2); }
+.empty-state .hint { font-size: 11px; color: var(--muted); }
+
+/* INSIGHT BOX */
+.insight-box {
+  background: linear-gradient(135deg, rgba(200,240,80,0.05), rgba(80,180,240,0.05));
+  border: 1px solid rgba(200,240,80,0.2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 12px;
+  color: var(--muted2);
+  line-height: 1.7;
+}
+.insight-title { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; font-family: var(--font-mono); }
+
+/* VALUATION SNAPSHOT */
+.val-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.val-item { background: var(--surface2); border-radius: var(--radius); padding: 12px; text-align: center; }
+.val-num { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--text); }
+.val-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+/* EARNINGS DECISION */
+.decision-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-mono);
+}
+.decision-btn:hover { background: var(--surface3); color: var(--text); }
+.decision-btn.selected-add { background: rgba(80,224,160,0.15); border-color: var(--green); color: var(--green); }
+.decision-btn.selected-hold { background: rgba(80,180,240,0.15); border-color: var(--blue); color: var(--blue); }
+.decision-btn.selected-trim { background: rgba(232,184,75,0.15); border-color: var(--gold); color: var(--gold); }
+.decision-btn.selected-sell { background: rgba(240,80,80,0.15); border-color: var(--red); color: var(--red); }
+.decision-btn.selected-hold2 { background: rgba(160,124,240,0.15); border-color: var(--purple); color: var(--purple); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  #nav { display: none; }
+  .page { padding: 16px; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-12 .span-7, .grid-12 .span-5 { grid-column: span 12; }
+  .val-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">
+    <img src="https://www.energent.ai/images/logos/svg/energent-logo.svg" alt="Energent">
+    <div class="tagline">STRATEGY PANEL v1.0</div>
+  </div>
+  <div class="nav-items">
+    <div class="nav-section-label">Overview</div>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+      <span class="icon">⬡</span> Dashboard
+    </div>
+    <div class="nav-section-label">Candidates</div>
+    <div class="nav-item" data-page="compounders" onclick="showPage('compounders')">
+      <span class="icon">◈</span> Compounders <span class="badge" id="badge-compounders">0</span>
+    </div>
+    <div class="nav-item" data-page="attack" onclick="showPage('attack')">
+      <span class="icon">⟁</span> Attack <span class="badge" id="badge-attack">0</span>
+    </div>
+    <div class="nav-item" data-page="flow" onclick="showPage('flow')">
+      <span class="icon">≋</span> FLOW
+    </div>
+    <div class="nav-section-label">Analysis</div>
+    <div class="nav-item" data-page="compare" onclick="showPage('compare')">
+      <span class="icon">⇔</span> Compare
+    </div>
+    <div class="nav-item" data-page="pipeline" onclick="showPage('pipeline')">
+      <span class="icon">⌥</span> Pipeline <span class="badge" id="badge-pipeline">0</span>
+    </div>
+    <div class="nav-item" data-page="earnings" onclick="showPage('earnings')">
+      <span class="icon">◷</span> Earnings
+    </div>
+    <div class="nav-section-label">Tools</div>
+    <div class="nav-item" data-page="review" onclick="showPage('review')">
+      <span class="icon">✦</span> Review Business
+    </div>
+    <div class="nav-section-label">Records</div>
+    <div class="nav-item" data-page="documents" onclick="showPage('documents')">
+      <span class="icon">⊟</span> Documents
+    </div>
+  </div>
+  <div class="nav-bottom">
+    LAST UPDATED<br><span class="date" id="nav-date">—</span>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Candidates Overview</div>
+        <div class="page-subtitle">FLOW-COMPOUNDER ROTATION FRAMEWORK</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-accent btn-sm" onclick="openAddStock()">+ Add Stock</button>
+        <button class="btn btn-sm" onclick="showPage('compare')">⇔ Compare</button>
+        <button class="btn btn-sm" onclick="forceReset()" style="color:var(--red);border-color:rgba(240,80,80,0.3);" title="Reset all data to defaults">↺ Reset Data</button>
+      </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="grid grid-4" style="margin-bottom:20px;" id="kpi-row"></div>
+
+    <!-- NOTICE / FLOW PHASE -->
+    <div id="flow-notice-banner"></div>
+
+    <!-- MAIN TABLE -->
+    <div class="grid grid-12" style="margin-bottom:20px;">
+      <div class="card span-12">
+        <div class="card-title">Candidates List</div>
+        <div class="table-wrap">
+          <table id="main-table">
+            <thead>
+              <tr>
+                <th>TICKER</th>
+                <th>NAME</th>
+                <th>TYPE</th>
+                <th>RATING</th>
+                <th>DR</th>
+                <th>P/E</th>
+                <th>T1</th>
+                <th>T2</th>
+                <th>TARGET %</th>
+                <th>STARTER %</th>
+                <th>STATUS</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="main-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART + WATCHLIST -->
+    <div class="grid grid-12">
+      <div class="card span-7">
+        <div class="card-title">Quality vs. Valuation Matrix</div>
+        <div id="dash-bubble" style="height:320px;"></div>
+      </div>
+      <div class="card span-5">
+        <div class="card-title">Watchlist</div>
+        <div id="watchlist-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPOUNDERS PAGE -->
+  <div class="page" id="page-compounders">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Compounders</div>
+        <div class="page-subtitle">CORE QUALITY HOLDINGS — LONG-DURATION WEALTH BUILDERS</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-accent btn-sm" onclick="openAddStock()">+ Add</button>
+      </div>
+    </div>
+    <div id="compounder-cards-grid"></div>
+  </div>
+
+  <!-- ATTACK PAGE -->
+  <div class="page" id="page-attack">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Attack Names</div>
+        <div class="page-subtitle">CYCLICAL, SIGNAL-DRIVEN — RING-FENCED FROM QUALITY BUCKET</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-accent btn-sm" onclick="openAddStock()">+ Add</button>
+      </div>
+    </div>
+    <div class="notice notice-warn">
+      <span class="notice-icon">⚠</span>
+      <span>Attack names are judged by setup logic, not quality score. Only include when valuation, asymmetry or signal justify exposure. Keep clearly separated from compounders.</span>
+    </div>
+    <div id="attack-cards-grid"></div>
+  </div>
+
+  <!-- FLOW PAGE -->
+  <div class="page" id="page-flow">
+    <div class="page-header">
+      <div>
+        <div class="page-title">FLOW — Strategy Engine</div>
+        <div class="page-subtitle">VOLATILITY ENGINE / HEDGE / ROTATION FUND</div>
+      </div>
+    </div>
+
+    <div class="grid grid-12" style="margin-bottom:20px;">
+      <div class="card span-4">
+        <div class="card-title">Current FLOW State</div>
+        <div id="flow-kpi-box"></div>
+      </div>
+      <div class="card span-8">
+        <div class="card-title">Phase Framework</div>
+        <div id="flow-phases"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-12">
+      <div class="card span-6">
+        <div class="card-title">Rotation Rules</div>
+        <div id="flow-rules"></div>
+      </div>
+      <div class="card span-6">
+        <div class="card-title">Compounder Entry Status</div>
+        <div id="flow-entry-status"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title">Update FLOW Status</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Volatility Regime</label>
+          <select id="flow-vol-regime">
+            <option value="low-cheap">Low Vol / Cheap</option>
+            <option value="low-expensive">Low Vol / Expensive</option>
+            <option value="early-stress">Early Stress</option>
+            <option value="peak-stress">Peak Stress</option>
+            <option value="deep-crash">Deep Crash</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Current FLOW Allocation %</label>
+          <input type="number" id="flow-alloc" placeholder="80" min="0" max="100">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" id="flow-notes-input" placeholder="Add context...">
+        </div>
+      </div>
+      <button class="btn btn-accent" onclick="saveFLOWState()">Save FLOW State</button>
+    </div>
+  </div>
+
+  <!-- COMPARE PAGE -->
+  <div class="page" id="page-compare">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Side-by-Side Compare</div>
+        <div class="page-subtitle">SELECT 2–5 CANDIDATES TO COMPARE</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Select Stocks to Compare</div>
+      <div class="compare-col-selector" id="compare-selector"></div>
+    </div>
+    <div id="compare-question" style="margin-bottom:12px;"></div>
+    <div class="card">
+      <div class="card-title">Comparison Matrix</div>
+      <div class="table-wrap" id="compare-table-wrap">
+        <div class="empty-state">
+          <div class="icon">⇔</div>
+          <div class="label">Select 2 or more stocks above to compare</div>
+          <div class="hint">Compare rating, P/E, margins, moat, and more side-by-side</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE PAGE -->
+  <div class="page" id="page-pipeline">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Pipeline</div>
+        <div class="page-subtitle">CANDIDATES NOT YET ON MAIN LIST</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-accent btn-sm" onclick="openAddPipeline()">+ Add Candidate</button>
+      </div>
+    </div>
+    <div class="grid grid-12" style="margin-bottom:16px;" id="pipeline-kpis"></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>TICKER</th><th>NAME</th><th>STAGE</th><th>SCORE</th>
+              <th>P/E</th><th>DR</th><th>REJECTION REASON</th>
+              <th>REVISIT TRIGGER</th><th>LAST REVIEWED</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="pipeline-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EARNINGS PAGE -->
+  <div class="page" id="page-earnings">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Earnings Reviews</div>
+        <div class="page-subtitle">POST-RESULTS CHECKLIST & DECISIONS</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-accent btn-sm" onclick="openAddEarnings()">+ Log Review</button>
+      </div>
+    </div>
+    <div id="earnings-list"></div>
+  </div>
+
+  <!-- DOCUMENTS PAGE -->
+  <div class="page" id="page-documents">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Documents</div>
+        <div class="page-subtitle">RESEARCH FILES, REPORTS, NOTES PER STOCK</div>
+      </div>
+    </div>
+    <div id="docs-grid"></div>
+  </div>
+
+
+  <!-- REVIEW BUSINESS PAGE -->
+  <div class="page" id="page-review">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Review a Business</div>
+        <div class="page-subtitle">BUILD A BRIEF → SCORE WITH CLAUDE → IMPORT TO PIPELINE</div>
+      </div>
+    </div>
+
+    <!-- STEP 1: BUSINESS BRIEF -->
+    <div class="grid grid-12" style="margin-bottom:16px;">
+      <div class="card span-12">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">1</div>
+          <div class="card-title-lg" style="margin-bottom:0;">Describe the Business</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Company Name</label><input id="rb-name" placeholder="e.g. Nemetschek SE"></div>
+          <div class="form-group"><label>Ticker</label><input id="rb-ticker" placeholder="e.g. NEM.DE"></div>
+          <div class="form-group"><label>Country</label><input id="rb-country" placeholder="e.g. Germany"></div>
+          <div class="form-group"><label>Sector</label><input id="rb-sector" placeholder="e.g. Construction SaaS"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Current P/E</label><input id="rb-pe" type="number" placeholder="e.g. 34.0"></div>
+          <div class="form-group"><label>Revenue Growth % (latest)</label><input id="rb-growth" type="number" placeholder="e.g. 14"></div>
+          <div class="form-group"><label>EBIT Margin %</label><input id="rb-margin" type="number" placeholder="e.g. 28"></div>
+          <div class="form-group"><label>Recurring Revenue %</label><input id="rb-recurring" type="number" placeholder="e.g. 80"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>FCF Yield %</label><input id="rb-fcf" type="number" placeholder="e.g. 3.2"></div>
+          <div class="form-group"><label>Net Debt / Net Cash</label><input id="rb-debt" placeholder="e.g. Net cash, or 2x EBITDA"></div>
+          <div class="form-group"><label>ROCE %</label><input id="rb-roce" type="number" placeholder="e.g. 22"></div>
+          <div class="form-group"><label>Market Cap (approx)</label><input id="rb-mcap" placeholder="e.g. €4B"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Business Description — What does it do? Who are its customers? What is the moat?</label>
+          <textarea id="rb-description" rows="3" placeholder="e.g. Nemetschek provides BIM/CAD software for architects, engineers and construction companies. Market leader in Europe. Subscription-based model transitioning from perpetual. Network effects from file format dominance..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Revenue Model</label>
+            <select id="rb-revmodel">
+              <option value="">Select...</option>
+              <option value="pure-saas">Pure SaaS / Subscription</option>
+              <option value="mixed-sub">Mixed — Subscription + Transactional</option>
+              <option value="transactional">Transactional / Usage-based</option>
+              <option value="perpetual-transitioning">Perpetual Licence → Subscription (transitioning)</option>
+              <option value="marketplace">Marketplace / Take-rate</option>
+              <option value="hardware-consumables">Hardware + Consumables</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Competitive Position</label>
+            <select id="rb-competitive">
+              <option value="">Select...</option>
+              <option value="dominant">Dominant market leader — near-monopoly</option>
+              <option value="strong-2">Strong #1 or #2 with clear moat</option>
+              <option value="niche-leader">Niche leader in defined segment</option>
+              <option value="competitive">Competitive market, no clear moat</option>
+              <option value="challenged">Losing share or under pressure</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Geographic Exposure</label>
+            <select id="rb-geo">
+              <option value="">Select...</option>
+              <option value="single-country">Single country / highly concentrated</option>
+              <option value="regional">Regional (1-2 continents)</option>
+              <option value="global">Global</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Key Risks / Concerns (your initial read)</label>
+          <textarea id="rb-risks" rows="2" placeholder="e.g. Valuation premium, AI disruption risk, concentration in construction sector..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Any Additional Context (recent earnings, strategic changes, why you're looking at it)</label>
+          <textarea id="rb-context" rows="2" placeholder="e.g. Down 30% from highs, just reported strong Q4, management buyout rumours..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: GENERATE PROMPT -->
+    <div class="grid grid-12" style="margin-bottom:16px;">
+      <div class="card span-12">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">2</div>
+          <div class="card-title-lg" style="margin-bottom:0;">Copy Prompt → Ask Claude</div>
+        </div>
+        <div class="notice notice-info" style="margin-bottom:12px;">
+          <span class="notice-icon">◎</span>
+          <span>Click <strong>Generate Prompt</strong> to build a fully structured brief. Copy it and paste it into your Claude.ai conversation — Claude knows your full strategy and will return a scored analysis. Then come back and use <strong>Import Score</strong> below.</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-accent" onclick="generateReviewPrompt()" style="flex:1;">Generate Prompt</button>
+          <button class="btn" id="copy-prompt-btn" onclick="copyPrompt()" style="display:none;">⎘ Copy to Clipboard</button>
+        </div>
+        <div id="review-prompt-box" style="display:none;">
+          <textarea id="review-prompt-text" rows="12" readonly
+            style="width:100%;font-size:11px;font-family:var(--font-mono);background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:12px;color:var(--muted2);resize:vertical;line-height:1.6;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: IMPORT SCORE -->
+    <div class="grid grid-12">
+      <div class="card span-12">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">3</div>
+          <div class="card-title-lg" style="margin-bottom:0;">Import Claude's Score → Save to Pipeline</div>
+        </div>
+        <div class="notice notice-info" style="margin-bottom:12px;">
+          <span class="notice-icon">◎</span>
+          <span>Paste Claude's full response below. The panel will extract the score, DR rating, thesis, and notes — then let you save directly to Pipeline or promote to Candidates.</span>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Paste Claude's Response Here</label>
+          <textarea id="import-response" rows="10" placeholder="Paste Claude's full scoring response here...&#10;&#10;The panel will parse the total score, individual ratings, downturn resistance, thesis summary, and key risks automatically."></textarea>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="btn btn-accent" onclick="parseAndPreview()" style="flex:1;">Parse & Preview</button>
+          <button class="btn" onclick="clearReviewForm()">Clear All</button>
+        </div>
+
+        <!-- PARSED PREVIEW -->
+        <div id="parsed-preview" style="display:none;">
+          <div class="divider"></div>
+          <div class="section-label" style="margin-bottom:12px;">PARSED RESULT — REVIEW BEFORE SAVING</div>
+          <div class="grid grid-3" style="margin-bottom:16px;" id="parsed-scores-grid"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Total Score (edit if needed)</label>
+              <input id="imp-score" type="number" min="0" max="100">
+            </div>
+            <div class="form-group">
+              <label>Downturn Resistance</label>
+              <select id="imp-dr">
+                <option value="">Unknown</option>
+                <option value="YES">YES</option>
+                <option value="NEUTRAL">NEUTRAL</option>
+                <option value="NO">NO</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Stage</label>
+              <select id="imp-stage">
+                <option value="rated">Rated</option>
+                <option value="watchlist">Watchlist</option>
+                <option value="deep-review">Deep Review</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>Short Thesis (extracted / edit)</label>
+            <textarea id="imp-thesis" rows="2"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>Key Risks / Rejection Reason</label>
+            <textarea id="imp-reason" rows="2"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Revisit Trigger</label>
+            <input id="imp-trigger" placeholder="e.g. P/E compresses below 25×...">
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-accent" onclick="saveImportedToPipeline()" style="flex:1;">→ Save to Pipeline</button>
+            <button class="btn" onclick="saveImportedToFullCandidates()" style="flex:0 0 auto;">→ Add as Full Candidate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ADD STOCK MODAL -->
+<div class="modal-overlay" id="modal-add-stock">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="add-modal-title">Add New Stock</div>
+      <button class="modal-close" onclick="closeModal('modal-add-stock')">✕</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(this,'tab-basic')">Basic Info</div>
+      <div class="tab" onclick="switchTab(this,'tab-ratings')">Ratings</div>
+      <div class="tab" onclick="switchTab(this,'tab-allocation')">Allocation</div>
+      <div class="tab" onclick="switchTab(this,'tab-thesis')">Thesis</div>
+    </div>
+
+    <div class="tab-content active" id="tab-basic">
+      <div class="form-row">
+        <div class="form-group"><label>Ticker</label><input id="f-ticker" placeholder="MEDI"></div>
+        <div class="form-group"><label>Name</label><input id="f-name" placeholder="Medistim ASA"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Country</label><input id="f-country" placeholder="Norway"></div>
+        <div class="form-group"><label>Sector</label><input id="f-sector" placeholder="MedTech"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select id="f-type">
+            <option value="compounder">Compounder</option>
+            <option value="attack">Attack / Signal-driven</option>
+            <option value="flow">FLOW</option>
+            <option value="compounder-opportunistic">Compounder / Opportunistic</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="active">Active</option>
+            <option value="watchlist">Watchlist</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Current Price</label><input id="f-price" type="number" placeholder="0.00"></div>
+        <div class="form-group"><label>P/E Ratio</label><input id="f-pe" type="number" placeholder="0.0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>EPS</label><input id="f-eps" type="number" placeholder="0.00"></div>
+        <div class="form-group"><label>FCF Yield %</label><input id="f-fcf" type="number" placeholder="0.0"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-ratings">
+      <div class="section-label" style="margin-bottom:12px;">100-POINT QUALITY RATING</div>
+      <div id="rating-form-fields"></div>
+      <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:var(--radius);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">CALCULATED TOTAL</span>
+        <span style="font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--accent);" id="live-score">0</span>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Downturn Resistance</label>
+            <select id="f-dr">
+              <option value="YES">YES</option>
+              <option value="NEUTRAL">NEUTRAL</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-allocation">
+      <div class="form-row">
+        <div class="form-group"><label>Target Alloc % (correction)</label><input id="f-target-alloc" type="number" placeholder="15.0"></div>
+        <div class="form-group"><label>Starter Alloc % (pre-correction)</label><input id="f-starter-alloc" type="number" placeholder="3.75"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>T1 Range (e.g. 58-66)</label><input id="f-t1" placeholder="58-66"></div>
+        <div class="form-group"><label>T2 Range (e.g. 47-57)</label><input id="f-t2" placeholder="47-57"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Conviction Tier</label>
+          <select id="f-conviction">
+            <option value="core">Core — Tier 1</option>
+            <option value="high">High — Tier 2</option>
+            <option value="medium">Medium — Tier 3</option>
+            <option value="speculative">Speculative</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Price Status</label>
+          <select id="f-price-status">
+            <option value="in-range">In Range</option>
+            <option value="above-range">Above Range</option>
+            <option value="below-range">Below Range</option>
+            <option value="waiting">Waiting for Signal</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-thesis">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Short Thesis</label>
+        <textarea id="f-thesis" rows="3" placeholder="Core investment thesis in 2-3 sentences..."></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Watch — Key KPIs to Monitor</label>
+        <textarea id="f-watch" rows="2" placeholder="Revenue growth, EBIT margin, recurring revenue %..."></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Break Thesis If...</label>
+        <textarea id="f-break" rows="2" placeholder="Growth falls below X%, margins compress materially..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="f-notes" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <button class="btn btn-accent" onclick="saveStock()" style="flex:1;">Save Stock</button>
+      <button class="btn" onclick="closeModal('modal-add-stock')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal" style="max-width:780px;">
+    <div class="modal-header">
+      <div id="detail-header-content"></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-sm" id="detail-edit-btn" onclick="">Edit</button>
+        <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+      </div>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- ADD PIPELINE MODAL -->
+<div class="modal-overlay" id="modal-pipeline">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Pipeline Candidate</div>
+      <button class="modal-close" onclick="closeModal('modal-pipeline')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Ticker</label><input id="p-ticker" placeholder="WKLS"></div>
+      <div class="form-group"><label>Name</label><input id="p-name" placeholder="Wolters Kluwer"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Stage</label>
+        <select id="p-stage">
+          <option value="first-pass">First Pass</option>
+          <option value="deep-review">Deep Review</option>
+          <option value="rated">Rated</option>
+          <option value="watchlist">Watchlist</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Score (if rated)</label><input id="p-score" type="number" placeholder="0-100"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>P/E</label><input id="p-pe" type="number" placeholder="0.0"></div>
+      <div class="form-group">
+        <label>DR</label>
+        <select id="p-dr">
+          <option value="">Unknown</option>
+          <option value="YES">YES</option>
+          <option value="NEUTRAL">NEUTRAL</option>
+          <option value="NO">NO</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px;">
+      <label>Rejection Reason / Notes</label>
+      <textarea id="p-reason" rows="2" placeholder="e.g. AI moat compression risk, high P/E..."></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label>Revisit Trigger</label>
+      <input id="p-trigger" placeholder="e.g. P/E compresses below 28×, clears AI risk...">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-accent" onclick="savePipeline()" style="flex:1;">Save</button>
+      <button class="btn" onclick="closeModal('modal-pipeline')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EARNINGS MODAL -->
+<div class="modal-overlay" id="modal-earnings">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log Earnings Review</div>
+      <button class="modal-close" onclick="closeModal('modal-earnings')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Company</label>
+        <select id="e-company" style="width:100%;"></select>
+      </div>
+      <div class="form-group"><label>Report Date</label><input id="e-date" type="date"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px;">
+      <label>Key Questions / Checklist Items (one per line)</label>
+      <textarea id="e-checklist" rows="4" placeholder="Revenue growth met expectation?&#10;Margins held?&#10;Guidance maintained?&#10;Thesis intact?"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label>Notes</label>
+      <textarea id="e-notes" rows="2"></textarea>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label>Decision</label>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;" id="decision-buttons">
+        <button class="decision-btn" onclick="selectDecision('add',this)">✚ ADD</button>
+        <button class="decision-btn" onclick="selectDecision('hold',this)">◉ HOLD</button>
+        <button class="decision-btn" onclick="selectDecision('trim',this)">▽ TRIM</button>
+        <button class="decision-btn" onclick="selectDecision('sell',this)">✕ SELL</button>
+        <button class="decision-btn" onclick="selectDecision('no-action',this)">— NO ACTION</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-accent" onclick="saveEarnings()" style="flex:1;">Save Review</button>
+      <button class="btn" onclick="closeModal('modal-earnings')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA LAYER — localStorage persistence
+   ============================================================ */
+const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow' };
+
+// Self-heal: if stored data is from an old/broken session, wipe and reseed
+(function healStorage() {
+  try {
+    const raw = localStorage.getItem('isp_stocks');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Check if data looks valid — must be array with ticker and name
+      if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].ticker || !parsed[0].name) {
+        console.log('[Panel] Stale/broken data detected — resetting localStorage');
+        Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      }
+    }
+  } catch(e) {
+    // JSON parse error = definitely broken
+    Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+  }
+})();
+
+function load(key) { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS[key])) || []; } catch { return []; } }
+function loadObj(key) { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS[key])) || {}; } catch { return {}; } }
+function save(key, data) { localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(data)); }
+function saveObj(key, data) { localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(data)); }
+
+const RATING_FIELDS = [
+  { key:'moat', label:'Moat Strength', weight:14 },
+  { key:'predictability', label:'Business Predictability', weight:14 },
+  { key:'growth_durability', label:'Growth Durability', weight:12 },
+  { key:'revenue_quality', label:'Revenue Quality', weight:12 },
+  { key:'balance_sheet', label:'Balance Sheet Strength', weight:10 },
+  { key:'growth_strength', label:'Growth Strength', weight:8 },
+  { key:'reinvestment_runway', label:'Reinvestment Runway', weight:8 },
+  { key:'management', label:'Management Alignment', weight:7 },
+  { key:'capital_allocation', label:'Capital Allocation Quality', weight:6 },
+  { key:'roce', label:'Return on Capital (ROCE)', weight:6 },
+  { key:'capex_intensity', label:'Capex Intensity (low=good)', weight:3 },
+];
+
+/* ---- SEED DATA ---- */
+function seedData() {
+  const existing = load('stocks');
+  // Reseed if empty or clearly broken (no ticker field)
+  if (existing.length > 0 && existing[0].ticker) return;
+  const stocks = [
+    { id: uid(), ticker:'MEDI', name:'Medistim', country:'Norway', sector:'MedTech', type:'compounder', status:'active',
+      price:220, pe:25.3, eps:0, fcf:0, score:87, moat:13, predictability:13, growth_durability:11, revenue_quality:11,
+      balance_sheet:9, growth_strength:7, reinvestment_runway:8, management:6, capital_allocation:5, roce:6, capex_intensity:3,
+      dr:'YES', target_alloc:15, starter_alloc:3.75, t1:'', t2:'', conviction:'core', price_status:'waiting',
+      thesis:'Niche cardiac/vascular surgery device company. Strong moat from clinical adoption, regulatory barriers, sticky installed base. Highest-rated pick.',
+      watch:'Growth ≥ mid-teens, EBIT margin ≥ 25%, recurring revenue 65-75%, imaging + flow adoption, procedure growth (esp. US).',
+      break_thesis:'Growth falls to low double digits sustainably, recurring revenue weakens, imaging adoption stalls, margins compress.',
+      notes:'Top-rated. Cleanest name on the list.' },
+    { id: uid(), ticker:'3923', name:'Rakus', country:'Japan', sector:'SaaS', type:'compounder', status:'active',
+      price:752, pe:22.6, eps:0, fcf:0, score:84, moat:12, predictability:12, growth_durability:10, revenue_quality:11,
+      balance_sheet:8, growth_strength:8, reinvestment_runway:8, management:6, capital_allocation:4, roce:5, capex_intensity:3,
+      dr:'YES', target_alloc:15, starter_alloc:3.75, t1:'', t2:'', conviction:'core', price_status:'waiting',
+      thesis:'Japan SME SaaS focused on expense management and invoicing. Recurring revenue, sticky workflow, Japan digitalization runway.',
+      watch:'Revenue ≥ 10-15%, subscription/ARR healthy, margins expanding, sales efficiency solid.',
+      break_thesis:'Growth slips below 10% sustainably or margins stop improving.',
+      notes:'Premium valuation, but high quality and structural growth.' },
+    { id: uid(), ticker:'1INN', name:'Innoscripta AG', country:'Germany', sector:'R&D Software', type:'compounder', status:'active',
+      price:0, pe:0, eps:0, fcf:0, score:81, moat:11, predictability:11, growth_durability:10, revenue_quality:10,
+      balance_sheet:8, growth_strength:8, reinvestment_runway:7, management:7, capital_allocation:5, roce:5, capex_intensity:3,
+      dr:'YES', target_alloc:10, starter_alloc:2.5, t1:'', t2:'', conviction:'core', price_status:'waiting',
+      thesis:'Founder-led German R&D workflow + tax-credit platform. Exceptional margins, high insider alignment, very strong growth. Concentration risk.',
+      watch:'Revenue growth ≥ 30%, EBIT margin ≥ 50%, customer count grows, revenue broadens beyond tax-credit core.',
+      break_thesis:'Growth < 20% sustainably, margins compress sharply, cash conversion deteriorates, diversification fails.',
+      notes:'Held back by concentration risk — mostly one use case in one country.' },
+    { id: uid(), ticker:'G24', name:'Scout24 SE', country:'Germany', sector:'PropTech', type:'compounder', status:'active',
+      price:70, pe:20.9, eps:0, fcf:0, score:84, moat:12, predictability:12, growth_durability:11, revenue_quality:11,
+      balance_sheet:8, growth_strength:7, reinvestment_runway:7, management:6, capital_allocation:5, roce:5, capex_intensity:3,
+      dr:'NEUTRAL', target_alloc:7.5, starter_alloc:2.0, t1:'58-66', t2:'47-57', conviction:'high', price_status:'waiting',
+      thesis:'Leading German digital real-estate ecosystem. Network effects, subscription-heavy, deep workflow integration. Replaced M-Up as cleaner, more resilient alternative.',
+      watch:'Double-digit revenue growth, subscription growth (Pro + Private), ARPU growth, EBITDA margin ≥ 60%.',
+      break_thesis:'Subscription momentum weakens, lead/transaction products deteriorate, acquisitions damage focus or margins.',
+      notes:'Preferred over M-Up: less discretionary, more macro-resilient.' },
+    { id: uid(), ticker:'3769', name:'GMO Payment Gateway', country:'Japan', sector:'Fintech', type:'compounder', status:'active',
+      price:7444, pe:31.3, eps:0, fcf:0, score:80, moat:11, predictability:11, growth_durability:10, revenue_quality:10,
+      balance_sheet:8, growth_strength:7, reinvestment_runway:7, management:6, capital_allocation:5, roce:5, capex_intensity:3,
+      dr:'NEUTRAL', target_alloc:7.5, starter_alloc:2.0, t1:'', t2:'', conviction:'high', price_status:'waiting',
+      thesis:'High-quality payment infrastructure. Strong merchant embedding, recurring revenue, operating leverage. Japan digital payments growth.',
+      watch:'Revenue + profit growth ≥ 10%, stable/improving margins, transaction value growth, no worsening credit in Money Service.',
+      break_thesis:'Growth < high single digits sustainably, large merchants move in-house, credit losses rise.',
+      notes:'Main caution: valuation + transaction/credit cycle exposure.' },
+    { id: uid(), ticker:'KSPI', name:'Kaspi.kz', country:'Kazakhstan', sector:'Super App', type:'compounder-opportunistic', status:'active',
+      price:86, pe:7.2, eps:0, fcf:0, score:78, moat:12, predictability:10, growth_durability:10, revenue_quality:10,
+      balance_sheet:8, growth_strength:7, reinvestment_runway:6, management:6, capital_allocation:5, roce:5, capex_intensity:3,
+      dr:'NO', target_alloc:5.0, starter_alloc:1.25, t1:'', t2:'', conviction:'medium', price_status:'waiting',
+      thesis:'Kazakhstan super app: payments, marketplace, lending. Strongest ecosystem moat on the list, but held back by country/regulatory/credit/currency risk.',
+      watch:'Revenue + profit growth, ecosystem engagement, take rate, payments volume, lending growth, NPL, regulatory developments.',
+      break_thesis:'Regulation worsens materially, growth stalls, ecosystem dominance weakens.',
+      notes:'Higher-risk compounder/opportunistic. Quality is high, valuation can be attractive.' },
+    { id: uid(), ticker:'XYF', name:'X Financial', country:'China', sector:'Consumer Lending', type:'attack', status:'active',
+      price:0, pe:0, eps:0, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
+      balance_sheet:0, growth_strength:0, reinvestment_runway:0, management:0, capital_allocation:0, roce:0, capex_intensity:0,
+      dr:'NO', target_alloc:15.0, starter_alloc:5.0, t1:'', t2:'', conviction:'speculative', price_status:'waiting',
+      thesis:'Signal-driven deep value attack in Chinese consumer lending. Not a quality business. Investable only if YRD signal confirms + valuation asymmetric.',
+      watch:'YRD first: loan volume, credit quality, provisions, profitability, regulatory commentary. If YRD confirms, evaluate XYF itself.',
+      break_thesis:'Credit losses spike, signal deteriorates, regulation worsens.',
+      notes:'15% target only if YRD signal confirms. Ring-fenced.' },
+    { id: uid(), ticker:'OMSE', name:'OMSE (Oil & Gas Infra)', country:'', sector:'Energy Infrastructure', type:'attack', status:'active',
+      price:0, pe:0, eps:0, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
+      balance_sheet:0, growth_strength:0, reinvestment_runway:0, management:0, capital_allocation:0, roce:0, capex_intensity:0,
+      dr:'NO', target_alloc:5.0, starter_alloc:1.25, t1:'', t2:'', conviction:'speculative', price_status:'waiting',
+      thesis:'Cyclical deep-value oil & gas infrastructure. Strong profitability, large cash component, sensitive to order timing + capex cycles. Attack name only.',
+      watch:'Revenue stability, margins, cash, new contracts, backlog, O&G capex commentary.',
+      break_thesis:'Margins collapse or cash starts being burned.',
+      notes:'Not a compounder. Included as attack name.' },
+  ];
+  save('stocks', stocks);
+
+  const pipeline = [
+    { id: uid(), ticker:'NEMETSCHEK', name:'Nemetschek SE', stage:'watchlist', score:87, pe:34.0, dr:'NEUTRAL',
+      reason:'High-quality but clearly more expensive than current alternatives. P/E premium not justified given similar quality to top names.',
+      trigger:'P/E compresses to ~22-26× to match Medistim quality-adjusted valuation.', reviewed: today() },
+    { id: uid(), ticker:'WKL', name:'Wolters Kluwer', stage:'watchlist', score:0, pe:0, dr:'YES',
+      reason:'Initially looked elite. Rating revised down due to AI moat compression risk in legal/tax/professional information workflows.',
+      trigger:'AI risk resolves or moat holds visibly through 2-3 earnings cycles. T1: EUR 63-72, T2: EUR 52-61.', reviewed: today() },
+    { id: uid(), ticker:'MUP', name:'M-Up Holdings', stage:'watchlist', score:0, pe:0, dr:'NEUTRAL',
+      reason:'Moved to secondary watchlist when Scout24 emerged as cleaner, less discretionary, more macro-resilient alternative. More exposed to fan spending and artist cycles.',
+      trigger:'Scout24 degrades significantly or M-Up diversification strengthens substantially.', reviewed: today() },
+    { id: uid(), ticker:'ANYCOLOR', name:'Anycolor', stage:'rejected', score:0, pe:0, dr:'NO',
+      reason:'Removed from main picks. Strong current growth and economics, but scored lower on predictability, revenue durability, and resilience under updated framework.',
+      trigger:'Framework update or business model shift improving predictability and durability.', reviewed: today() },
+  ];
+  save('pipeline', pipeline);
+
+  saveObj('flow', { regime:'low-cheap', alloc:80, notes:'Pre-correction phase. FLOW is dominant holding while compounders are seeded.', updated: today() });
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function today() { return new Date().toISOString().slice(0,10); }
+function fmt(v, dec=1) { if (v===null||v===undefined||v==='') return '—'; const n=parseFloat(v); return isNaN(n)?'—':n.toFixed(dec); }
+function pct(v) { if (!v&&v!==0) return '—'; return v+'%'; }
+
+function drBadge(dr) {
+  if (!dr) return '';
+  const cls = dr==='YES'?'badge-yes':dr==='NEUTRAL'?'badge-neutral':'badge-no';
+  return `<span class="badge ${cls}">${dr}</span>`;
+}
+function statusBadge(s) {
+  const map={active:'badge-active',watchlist:'badge-watchlist',rejected:'badge-rejected'};
+  return `<span class="badge ${map[s]||'badge-pipeline'}">${s.toUpperCase()}</span>`;
+}
+function typeBadge(t) {
+  const map={compounder:'badge-compounder',attack:'badge-attack',flow:'badge-flow','compounder-opportunistic':'badge-compounder'};
+  const labels={compounder:'Compounder',attack:'Attack','compounder-opportunistic':'Compounder / Opp.', flow:'FLOW'};
+  return `<span class="badge ${map[t]||'badge-pipeline'}">${labels[t]||t}</span>`;
+}
+function statusIcon(s) {
+  const map={'in-range':'dot-in-range','above-range':'dot-above','below-range':'dot-below','waiting':'dot-waiting'};
+  const labels={'in-range':'In Range','above-range':'Above Range','below-range':'Below Range','waiting':'Waiting'};
+  return `<span class="status-dot ${map[s]||'dot-waiting'}"></span>${labels[s]||s}`;
+}
+function scoreBar(score, maxW=60) {
+  const w = Math.round((score/100)*maxW);
+  return `<div class="score-bar-wrap"><span class="score-num">${score}</span><div class="score-bar" style="width:${w}px;"></div></div>`;
+}
+function stageColor(s) {
+  const map={'first-pass':'var(--muted)','deep-review':'var(--blue)','rated':'var(--purple)','watchlist':'var(--gold)','rejected':'var(--red)'};
+  return `<span style="color:${map[s]||'var(--muted)'};font-family:var(--font-mono);font-size:11px;font-weight:600;">${s.replace('-',' ').toUpperCase()}</span>`;
+}
+
+/* ============================================================
+   NAV & PAGE ROUTING
+   ============================================================ */
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name)?.classList.add('active');
+  document.querySelector(`.nav-item[data-page="${name}"]`)?.classList.add('active');
+  renderPage(name);
+}
+
+function renderPage(name) {
+  if (name==='dashboard') renderDashboard();
+  else if (name==='compounders') renderCompounders();
+  else if (name==='attack') renderAttack();
+  else if (name==='flow') renderFlow();
+  else if (name==='compare') renderCompare();
+  else if (name==='pipeline') renderPipeline();
+  else if (name==='earnings') renderEarnings();
+  else if (name==='documents') renderDocuments();
+  else if (name==='review') renderReview();
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  const stocks = load('stocks');
+  const flow = loadObj('flow');
+  const active = stocks.filter(s=>s.status==='active');
+  const compounders = active.filter(s=>s.type==='compounder'||s.type==='compounder-opportunistic');
+  const attacks = active.filter(s=>s.type==='attack');
+  const watchlist = stocks.filter(s=>s.status==='watchlist');
+
+  // KPIs
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="card kpi-card col-3">
+      <div class="kpi-val">${compounders.length}</div>
+      <div class="kpi-label">Active Compounders</div>
+      <div class="kpi-delta delta-up">▲ Core Candidates</div>
+    </div>
+    <div class="card kpi-card col-3">
+      <div class="kpi-val">${attacks.length}</div>
+      <div class="kpi-label">Attack Names</div>
+      <div class="kpi-delta delta-warn">◉ Signal-Driven</div>
+    </div>
+    <div class="card kpi-card col-3">
+      <div class="kpi-val">${flow.alloc||80}%</div>
+      <div class="kpi-label">FLOW Allocation</div>
+      <div class="kpi-delta delta-blue">≋ ${(flow.regime||'low-cheap').replace('-',' ').toUpperCase()}</div>
+    </div>
+    <div class="card kpi-card col-3">
+      <div class="kpi-val">${watchlist.length}</div>
+      <div class="kpi-label">Watchlist</div>
+      <div class="kpi-delta delta-warn">◷ Monitoring</div>
+    </div>
+  `.replace(/col-3/g,'');
+  // Re-render the grid
+  const kpiRow = document.getElementById('kpi-row');
+  kpiRow.querySelectorAll('.kpi-card').forEach(c=>c.classList.add('card'));
+
+  // FLOW banner
+  const regimeLabels = {'low-cheap':'Low Vol / Cheap — Hold phase','low-expensive':'Low Vol / Expensive — Risk management','early-stress':'Early Stress — Rotation not forced yet','peak-stress':'Peak Stress — Sell FLOW, rotate compounders','deep-crash':'Deep Crash — Continue rotation, build compounders'};
+  const actionLabels = {'low-cheap':'Maintain high allocation; optional small additions only','low-expensive':'Trim gradually if valuation stretches','early-stress':'Hold FLOW; no aggressive selling','peak-stress':'Sell aggressively and rotate into top compounders','deep-crash':'Continue rotation; reduce FLOW further and build compounders'};
+  const regime = flow.regime||'low-cheap';
+  const isAlert = regime==='peak-stress'||regime==='deep-crash';
+  document.getElementById('flow-notice-banner').innerHTML = `
+    <div class="notice ${isAlert?'notice-warn':'notice-info'}" style="margin-bottom:16px;">
+      <span class="notice-icon">${isAlert?'⚠':'≋'}</span>
+      <span><strong>FLOW Phase:</strong> ${regimeLabels[regime]} &nbsp;|&nbsp; <strong>Action:</strong> ${actionLabels[regime]}</span>
+    </div>`;
+
+  // MAIN TABLE
+  const tbody = document.getElementById('main-table-body');
+  tbody.innerHTML = '';
+  active.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.onclick = () => openDetail(s.id);
+    tr.innerHTML = `
+      <td class="td-ticker">${s.ticker}</td>
+      <td class="td-name">${s.name}</td>
+      <td>${typeBadge(s.type)}</td>
+      <td>${s.score>0?scoreBar(s.score):'<span style="color:var(--muted);">n/a</span>'}</td>
+      <td>${drBadge(s.dr)}</td>
+      <td class="td-mono">${s.pe>0?fmt(s.pe)+'×':'—'}</td>
+      <td class="td-mono" style="color:var(--green);">${s.t1||'—'}</td>
+      <td class="td-mono" style="color:var(--blue);">${s.t2||'—'}</td>
+      <td class="td-mono">${pct(s.target_alloc)}</td>
+      <td class="td-mono" style="color:var(--muted2);">${pct(s.starter_alloc)}</td>
+      <td>${statusIcon(s.price_status)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDetail('${s.id}')">→</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // WATCHLIST CARDS
+  document.getElementById('watchlist-cards').innerHTML = watchlist.length
+    ? watchlist.map(s=>`
+      <div style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail('${s.id}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-weight:700;font-family:var(--font-display);">${s.name}</span>
+          <span class="td-mono" style="color:var(--gold);">${s.ticker}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">${drBadge(s.dr)} ${s.score>0?`<span class="badge badge-compounder">Score ${s.score}</span>`:''}</div>
+        <div style="font-size:11px;color:var(--muted2);line-height:1.5;">${(s.thesis||'').slice(0,100)}${s.thesis?.length>100?'...':''}</div>
+      </div>`).join('')+'<div style="height:4px;"></div>'
+    : '<div class="empty-state" style="padding:30px 0;"><div class="icon" style="font-size:20px;">◎</div><div class="label">No watchlist items</div></div>';
+
+  // BUBBLE CHART
+  renderBubble();
+
+  // Badges
+  updateBadges();
+}
+
+function renderBubble() {
+  const stocks = load('stocks').filter(s=>s.score>0&&s.pe>0);
+  const statusColors = {active:'#50e0a0',watchlist:'#e8b84b',rejected:'#f05050'};
+  const groups = {};
+  stocks.forEach(s=>{
+    if (!groups[s.status]) groups[s.status]=[];
+    groups[s.status].push(s);
+  });
+  const traces = Object.entries(groups).map(([status,pts])=>({
+    type:'scatter', mode:'markers+text', name:status.charAt(0).toUpperCase()+status.slice(1),
+    x:pts.map(s=>s.score), y:pts.map(s=>s.pe),
+    text:pts.map(s=>s.ticker),
+    textposition:'top center',
+    textfont:{ size:10, color:'rgba(232,234,240,0.8)' },
+    marker:{ size:12, color:statusColors[status]||'#6b7280', opacity:0.85 },
+    customdata:pts.map(s=>[s.name,s.pe,s.dr]),
+    hovertemplate:'<b>%{customdata[0]}</b><br>Score: %{x}<br>P/E: %{customdata[1]}×<br>DR: %{customdata[2]}<extra></extra>'
+  }));
+  traces.push({
+    type:'scatter', mode:'lines', name:'Ideal Zone boundary',
+    x:[80,80,null,80,100,null], y:[0,60,null,30,30,null],
+    line:{color:'rgba(200,240,80,0.3)',width:1,dash:'dot'},
+    hoverinfo:'skip', showlegend:false
+  });
+  const dark = true;
+  const layout = {
+    paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+    font:{family:'DM Mono, monospace',color:'#9ca3af',size:11},
+    margin:{l:40,r:20,t:20,b:40},
+    xaxis:{title:'Quality Score',gridcolor:'rgba(255,255,255,0.05)',zeroline:false,range:[65,105]},
+    yaxis:{title:'P/E ×',gridcolor:'rgba(255,255,255,0.05)',zeroline:false},
+    legend:{orientation:'h',y:-0.18,x:0.5,xanchor:'center',font:{size:11}},
+    shapes:[{type:'rect',xref:'x',yref:'y',x0:80,x1:105,y0:0,y1:30,fillcolor:'rgba(200,240,80,0.04)',line:{color:'rgba(200,240,80,0.2)',width:1,dash:'dot'},layer:'below'}],
+    hoverlabel:{bgcolor:'#1f242d',bordercolor:'rgba(255,255,255,0.1)',font:{family:'DM Mono',size:12}}
+  };
+  Plotly.react('dash-bubble', traces, layout, {responsive:true,displayModeBar:false});
+}
+
+function updateBadges() {
+  const stocks = load('stocks');
+  const pipeline = load('pipeline');
+  document.getElementById('badge-compounders').textContent = stocks.filter(s=>s.status==='active'&&(s.type==='compounder'||s.type==='compounder-opportunistic')).length;
+  document.getElementById('badge-attack').textContent = stocks.filter(s=>s.status==='active'&&s.type==='attack').length;
+  document.getElementById('badge-pipeline').textContent = pipeline.filter(s=>s.stage!=='rejected').length;
+}
+
+/* ============================================================
+   COMPOUNDERS + ATTACK — CARD GRID
+   ============================================================ */
+function renderCompounders() {
+  const stocks = load('stocks').filter(s=>(s.type==='compounder'||s.type==='compounder-opportunistic')&&s.status==='active');
+  renderStockGrid('compounder-cards-grid', stocks);
+}
+function renderAttack() {
+  const stocks = load('stocks').filter(s=>s.type==='attack'&&s.status==='active');
+  renderStockGrid('attack-cards-grid', stocks);
+}
+
+function renderStockGrid(containerId, stocks) {
+  const el = document.getElementById(containerId);
+  if (!stocks.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">◎</div><div class="label">No stocks in this category</div><div class="hint">Click "+ Add" to add a stock</div></div>';
+    return;
+  }
+  el.innerHTML = `<div class="grid grid-3">${stocks.map(s=>`
+    <div class="card" style="cursor:pointer;" onclick="openDetail('${s.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--accent);margin-bottom:3px;">${s.ticker}</div>
+          <div style="font-family:var(--font-display);font-size:16px;font-weight:700;">${s.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${s.country} · ${s.sector}</div>
+        </div>
+        ${s.score>0?`<div class="detail-score-ring" style="width:52px;height:52px;border-width:2px;">
+          <div class="score" style="font-size:18px;">${s.score}</div>
+          <div class="label">score</div>
+        </div>`:'<div style="font-size:10px;color:var(--muted);text-align:right;padding-top:4px;">no score</div>'}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        ${drBadge(s.dr)} ${typeBadge(s.type)}
+        <span class="badge badge-active">${(s.conviction||'').toUpperCase()||'ACTIVE'}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">${(s.thesis||'No thesis written.').slice(0,120)}${s.thesis?.length>120?'...':''}</div>
+      <div class="grid grid-3" style="gap:8px;">
+        <div class="val-item"><div class="val-num">${s.pe>0?fmt(s.pe)+'×':'—'}</div><div class="val-label">P/E</div></div>
+        <div class="val-item"><div class="val-num" style="color:var(--green);">${s.t1||'—'}</div><div class="val-label">T1</div></div>
+        <div class="val-item"><div class="val-num" style="color:var(--blue);">${s.t2||'—'}</div><div class="val-label">T2</div></div>
+      </div>
+      <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
+        ${statusIcon(s.price_status)}
+        <span style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">Target: ${pct(s.target_alloc)}</span>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+/* ============================================================
+   FLOW PAGE
+   ============================================================ */
+function renderFlow() {
+  const flow = loadObj('flow');
+  const stocks = load('stocks').filter(s=>s.status==='active');
+
+  const phases = [
+    { key:'low-cheap', name:'Low Vol / Cheap', desc:'Hold phase; FLOW can remain large while rest of market offers limited bargains.', action:'Maintain high allocation; optional small additions only' },
+    { key:'low-expensive', name:'Low Vol / Expensive', desc:'Risk management phase; valuation stretching.', action:'Trim gradually if valuation stretches' },
+    { key:'early-stress', name:'Early Stress', desc:'Volatility rising; FLOW earnings expanding; rotation not forced yet.', action:'Hold FLOW; no aggressive selling' },
+    { key:'peak-stress', name:'Peak Stress ⚡', desc:'Market pricing peak FLOW earnings; better entries emerging elsewhere.', action:'Sell aggressively and rotate into top compounders' },
+    { key:'deep-crash', name:'Deep Crash', desc:'Stress remains high; quality equities heavily discounted.', action:'Continue rotation; reduce FLOW further; build compounders' },
+  ];
+
+  document.getElementById('flow-kpi-box').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div class="kpi-val" style="font-size:40px;">${flow.alloc||80}%</div>
+      <div class="kpi-label">Current FLOW Allocation</div>
+    </div>
+    <div class="kpi-delta delta-blue" style="margin-bottom:12px;">≋ ${(flow.regime||'low-cheap').replace(/-/g,' ').toUpperCase()}</div>
+    <div style="font-size:12px;color:var(--muted2);line-height:1.5;">${flow.notes||'No notes.'}</div>
+    <div style="margin-top:10px;font-size:10px;color:var(--muted);font-family:var(--font-mono);">Updated: ${flow.updated||'—'}</div>`;
+
+  document.getElementById('flow-phases').innerHTML = phases.map(p=>`
+    <div class="flow-phase ${p.key===(flow.regime||'low-cheap')?'current':''}">
+      <div class="flow-phase-header">
+        <div class="flow-phase-name">${p.name}</div>
+        ${p.key===(flow.regime||'low-cheap')?'<span class="badge badge-active">CURRENT</span>':''}
+      </div>
+      <div class="flow-phase-desc">${p.desc}</div>
+      <div class="flow-action">→ ${p.action}</div>
+    </div>`).join('');
+
+  const rules = [
+    'Keep FLOW as majority holding (≥ 80%) before any significant correction',
+    'Do not rotate prematurely — wait for Peak Stress signals to confirm',
+    'At Peak Stress: sell FLOW aggressively, rotate into rated compounders by conviction tier',
+    'Target: Compounders reach full core allocation during/after correction',
+    'Deep Crash: continue reducing FLOW, prioritize T2 entries in top-rated names',
+    'Never chase compounders above T1 range — wait for FLOW rotation window',
+    'When calm returns: rebuild FLOW position if compounders are fully deployed',
+  ];
+  document.getElementById('flow-rules').innerHTML = rules.map((r,i)=>`
+    <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);min-width:18px;margin-top:2px;">${String(i+1).padStart(2,'0')}</span>
+      <span style="font-size:12px;color:var(--muted2);line-height:1.5;">${r}</span>
+    </div>`).join('');
+
+  document.getElementById('flow-entry-status').innerHTML = stocks
+    .filter(s=>s.type==='compounder'||s.type==='compounder-opportunistic')
+    .map(s=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-weight:700;font-size:13px;">${s.name}</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">${s.ticker} · Score ${s.score||'—'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);">${s.t1?'T1: '+s.t1:'T1: —'}</div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);">${s.t2?'T2: '+s.t2:'T2: —'}</div>
+          <div style="margin-top:3px;">${statusIcon(s.price_status)}</div>
+        </div>
+      </div>`).join('');
+
+  // Set form values
+  document.getElementById('flow-vol-regime').value = flow.regime||'low-cheap';
+  document.getElementById('flow-alloc').value = flow.alloc||80;
+  document.getElementById('flow-notes-input').value = flow.notes||'';
+}
+
+function saveFLOWState() {
+  saveObj('flow', {
+    regime: document.getElementById('flow-vol-regime').value,
+    alloc: document.getElementById('flow-alloc').value,
+    notes: document.getElementById('flow-notes-input').value,
+    updated: today()
+  });
+  renderFlow();
+  showToast('FLOW state saved');
+}
+
+/* ============================================================
+   COMPARE PAGE
+   ============================================================ */
+let selectedCompare = new Set();
+
+function renderCompare() {
+  const stocks = load('stocks');
+  const container = document.getElementById('compare-selector');
+  container.innerHTML = stocks.map(s=>`
+    <div class="compare-chip ${selectedCompare.has(s.id)?'selected':''}" onclick="toggleCompare('${s.id}')">
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--accent);">${s.ticker}</span>
+      <span>${s.name}</span>
+      ${selectedCompare.has(s.id)?'<span class="remove">×</span>':''}
+    </div>`).join('');
+  renderCompareTable();
+}
+
+function toggleCompare(id) {
+  if (selectedCompare.has(id)) selectedCompare.delete(id);
+  else if (selectedCompare.size < 5) selectedCompare.add(id);
+  renderCompare();
+}
+
+function renderCompareTable() {
+  const wrap = document.getElementById('compare-table-wrap');
+  const questionEl = document.getElementById('compare-question');
+  if (selectedCompare.size < 2) {
+    wrap.innerHTML = '<div class="empty-state"><div class="icon">⇔</div><div class="label">Select 2 or more stocks above</div><div class="hint">Maximum 5 stocks at once</div></div>';
+    questionEl.innerHTML = '';
+    return;
+  }
+  const stocks = load('stocks');
+  const sel = [...selectedCompare].map(id=>stocks.find(s=>s.id===id)).filter(Boolean);
+
+  // Auto insight
+  if (sel.length===2) {
+    const [a,b] = sel;
+    let insight = '';
+    if (a.score && b.score && a.pe>0 && b.pe>0) {
+      const winner = a.score>b.score?a:b.score>a.score?b:a.pe<b.pe?a:b;
+      const other = winner===a?b:a;
+      insight = `<div class="insight-box" style="margin-bottom:12px;"><div class="insight-title">⟁ Compare Insight</div>${winner.name} (Score: ${winner.score}, P/E: ${winner.pe}×) ${winner.score>other.score?'scores higher':'ties on quality but carries a lower valuation'}. ${other.pe>winner.pe?`${other.name} trades at a ${((other.pe/winner.pe-1)*100).toFixed(0)}% P/E premium.`:''} At equal or similar quality, the framework favors lower valuation — ${winner.name} has the edge.</div>`;
+    }
+    questionEl.innerHTML = insight;
+  } else { questionEl.innerHTML = ''; }
+
+  const METRICS = [
+    { key:'score', label:'Quality Score', fmt:v=>v>0?v:'—', best:'max' },
+    { key:'pe', label:'P/E Ratio', fmt:v=>v>0?v.toFixed(1)+'×':'—', best:'min' },
+    { key:'dr', label:'Downturn Resistance', fmt:v=>drBadge(v)||'—', best:'dr' },
+    { key:'target_alloc', label:'Target Alloc %', fmt:v=>v?v+'%':'—', best:'max' },
+    { key:'starter_alloc', label:'Starter Alloc %', fmt:v=>v?v+'%':'—', best:null },
+    { key:'t1', label:'T1 Entry Range', fmt:v=>v||'—', best:null },
+    { key:'t2', label:'T2 Entry Range', fmt:v=>v||'—', best:null },
+    { key:'conviction', label:'Conviction Tier', fmt:v=>v||'—', best:null },
+    { key:'moat', label:'Moat (wt 14)', fmt:v=>v||'—', best:'max' },
+    { key:'predictability', label:'Predictability (wt 14)', fmt:v=>v||'—', best:'max' },
+    { key:'growth_durability', label:'Growth Durability (wt 12)', fmt:v=>v||'—', best:'max' },
+    { key:'revenue_quality', label:'Revenue Quality (wt 12)', fmt:v=>v||'—', best:'max' },
+    { key:'balance_sheet', label:'Balance Sheet (wt 10)', fmt:v=>v||'—', best:'max' },
+    { key:'management', label:'Management (wt 7)', fmt:v=>v||'—', best:'max' },
+    { key:'price_status', label:'Price Status', fmt:v=>statusIcon(v), best:null },
+    { key:'type', label:'Type', fmt:v=>typeBadge(v), best:null },
+    { key:'status', label:'Status', fmt:v=>statusBadge(v), best:null },
+  ];
+
+  const colW = `${Math.floor(80/sel.length)}%`;
+  let html = `<table class="compare-table"><thead><tr>
+    <th style="width:20%;color:var(--muted);">METRIC</th>
+    ${sel.map(s=>`<th class="company-col" style="width:${colW};" onclick="openDetail('${s.id}')" style="cursor:pointer;">
+      <div>${s.name}</div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);margin-top:2px;">${s.ticker}</div>
+    </th>`).join('')}
+  </tr></thead><tbody>`;
+
+  METRICS.forEach(m=>{
+    const vals = sel.map(s=>s[m.key]);
+    let bestIdx = null;
+    if (m.best==='max') {
+      const nums = vals.map(v=>parseFloat(v)||0);
+      const max = Math.max(...nums);
+      if (max>0) bestIdx = nums.indexOf(max);
+    } else if (m.best==='min') {
+      const nums = vals.map(v=>parseFloat(v)||0).map(v=>v||999);
+      const min = Math.min(...nums);
+      if (min<900) bestIdx = nums.indexOf(min);
+    } else if (m.best==='dr') {
+      const order={YES:0,NEUTRAL:1,NO:2};
+      const ranked = vals.map(v=>order[v]??3);
+      const best = Math.min(...ranked);
+      bestIdx = ranked.indexOf(best);
+    }
+    html += `<tr><td class="metric-name">${m.label}</td>${sel.map((s,i)=>`<td class="${bestIdx!==null&&i===bestIdx?'best':bestIdx!==null&&m.best&&i!==bestIdx&&parseFloat(s[m.key])>0?'':''}"">${m.fmt(s[m.key])}</td>`).join('')}</tr>`;
+  });
+
+  html += `<tr><td class="metric-name" style="font-weight:700;color:var(--text);">Replace candidate?</td>${sel.map(s=>`<td><select onchange="saveReplaceFlag('${s.id}',this.value)" style="width:100%;font-size:11px;padding:4px;"><option value="">—</option><option value="yes" ${s.replace_flag==='yes'?'selected':''}>Yes, consider replacing</option><option value="maybe" ${s.replace_flag==='maybe'?'selected':''}>Maybe — monitor</option><option value="no" ${s.replace_flag==='no'?'selected':''}>No — keep</option></select></td>`).join('')}</tr>`;
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function saveReplaceFlag(id, val) {
+  const stocks = load('stocks');
+  const s = stocks.find(x=>x.id===id);
+  if (s) { s.replace_flag = val; save('stocks', stocks); }
+}
+
+/* ============================================================
+   PIPELINE
+   ============================================================ */
+function renderPipeline() {
+  const pipeline = load('pipeline');
+  const stages = ['first-pass','deep-review','rated','watchlist','rejected'];
+  const counts = {};
+  stages.forEach(s=>{ counts[s]=pipeline.filter(p=>p.stage===s).length; });
+
+  document.getElementById('pipeline-kpis').innerHTML = stages.map(s=>`
+    <div class="card span-2" style="padding:12px 14px;">
+      <div class="kpi-val" style="font-size:24px;">${counts[s]}</div>
+      <div class="kpi-label">${s.replace('-',' ').toUpperCase()}</div>
+    </div>`).join('').replace(/span-2/g,'');
+
+  const tbody = document.getElementById('pipeline-table-body');
+  tbody.innerHTML = '';
+  [...pipeline].sort((a,b)=>{
+    const order=['first-pass','deep-review','rated','watchlist','rejected'];
+    return order.indexOf(a.stage)-order.indexOf(b.stage);
+  }).forEach(p=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-ticker">${p.ticker}</td>
+      <td class="td-name">${p.name}</td>
+      <td>${stageColor(p.stage)}</td>
+      <td>${p.score>0?scoreBar(p.score,40):'—'}</td>
+      <td class="td-mono">${p.pe>0?fmt(p.pe)+'×':'—'}</td>
+      <td>${p.dr?drBadge(p.dr):'—'}</td>
+      <td style="font-size:11px;color:var(--muted2);max-width:200px;">${p.reason||'—'}</td>
+      <td style="font-size:11px;color:var(--muted2);max-width:160px;">${p.trigger||'—'}</td>
+      <td class="td-mono" style="font-size:11px;color:var(--muted);">${p.reviewed||'—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="deletePipeline('${p.id}')">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function deletePipeline(id) {
+  const pipeline = load('pipeline').filter(p=>p.id!==id);
+  save('pipeline', pipeline);
+  renderPipeline();
+}
+
+/* ============================================================
+   EARNINGS
+   ============================================================ */
+function renderEarnings() {
+  const earnings = load('earnings');
+  const el = document.getElementById('earnings-list');
+  if (!earnings.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">◷</div><div class="label">No earnings reviews logged</div><div class="hint">Click "+ Log Review" to add an earnings review</div></div>';
+    return;
+  }
+  el.innerHTML = [...earnings].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
+    const decisionColors = {add:'var(--green)',hold:'var(--blue)',trim:'var(--gold)',sell:'var(--red)','no-action':'var(--muted)'};
+    const checks = (e.checklist||[]);
+    return `<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div>
+          <div style="font-family:var(--font-display);font-size:16px;font-weight:700;">${e.company}</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">Report date: ${e.date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:${decisionColors[e.decision]||'var(--muted)'};">
+            ${(e.decision||'—').toUpperCase().replace('-',' ')}
+          </span>
+          <button class="btn btn-ghost btn-sm" onclick="deleteEarnings('${e.id}')">×</button>
+        </div>
+      </div>
+      ${checks.length?`<div class="section-label">CHECKLIST</div>${checks.map(c=>`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted2);">
+        <span style="color:var(--accent);">›</span> ${c}</div>`).join('')}`:''}
+      ${e.notes?`<div style="margin-top:10px;font-size:12px;color:var(--muted2);line-height:1.5;padding:10px;background:var(--surface2);border-radius:var(--radius);">${e.notes}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function deleteEarnings(id) {
+  save('earnings', load('earnings').filter(e=>e.id!==id));
+  renderEarnings();
+}
+
+/* ============================================================
+   DOCUMENTS
+   ============================================================ */
+function renderDocuments() {
+  const stocks = load('stocks');
+  document.getElementById('docs-grid').innerHTML = `
+    <div class="notice notice-info" style="margin-bottom:16px;">
+      <span class="notice-icon">ℹ</span>
+      <span>Documents are linked per stock. Open a stock's detail page to add PDF paths, report links, and notes files. This view shows all stocks with their linked document status.</span>
+    </div>
+    <div class="grid grid-3">${stocks.map(s=>`
+      <div class="card" style="cursor:pointer;" onclick="openDetail('${s.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);">${s.ticker}</div>
+            <div style="font-weight:700;font-family:var(--font-display);">${s.name}</div>
+          </div>
+          ${typeBadge(s.type)}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:11px;display:flex;justify-content:space-between;">
+            <span style="color:var(--muted);">PDF File</span>
+            <span style="color:${s.pdf_path?'var(--green)':'var(--muted)'};font-family:var(--font-mono);">${s.pdf_path?'Linked':'—'}</span>
+          </div>
+          <div style="font-size:11px;display:flex;justify-content:space-between;">
+            <span style="color:var(--muted);">Report</span>
+            <span style="color:${s.report_path?'var(--green)':'var(--muted)'};font-family:var(--font-mono);">${s.report_path?'Linked':'—'}</span>
+          </div>
+          <div style="font-size:11px;display:flex;justify-content:space-between;">
+            <span style="color:var(--muted);">Notes</span>
+            <span style="color:${s.notes_path?'var(--green)':'var(--muted)'};font-family:var(--font-mono);">${s.notes_path?'Linked':'—'}</span>
+          </div>
+        </div>
+      </div>`).join('')}</div>`;
+}
+
+/* ============================================================
+   DETAIL MODAL
+   ============================================================ */
+function openDetail(id) {
+  const stocks = load('stocks');
+  const s = stocks.find(x=>x.id===id);
+  if (!s) return;
+
+  document.getElementById('detail-header-content').innerHTML = `
+    <div class="detail-badges">${typeBadge(s.type)} ${statusBadge(s.status)} ${drBadge(s.dr)}</div>
+    <div class="detail-name">${s.name} <span style="font-family:var(--font-mono);font-size:14px;color:var(--accent);">${s.ticker}</span></div>
+    <div style="font-size:12px;color:var(--muted);">${s.country||''} · ${s.sector||''}</div>`;
+
+  document.getElementById('detail-edit-btn').onclick = () => { closeModal('modal-detail'); editStock(id); };
+
+  const totalScore = RATING_FIELDS.reduce((acc,f)=>acc+(parseFloat(s[f.key])||0),0);
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="tabs" style="margin-top:8px;">
+      <div class="tab active" onclick="switchTab(this,'dt-overview')">Overview</div>
+      <div class="tab" onclick="switchTab(this,'dt-rating')">Rating</div>
+      <div class="tab" onclick="switchTab(this,'dt-allocation')">Allocation</div>
+      <div class="tab" onclick="switchTab(this,'dt-thesis')">Thesis</div>
+      <div class="tab" onclick="switchTab(this,'dt-docs')">Docs</div>
+    </div>
+
+    <div class="tab-content active" id="dt-overview">
+      <div class="val-grid" style="margin-bottom:16px;">
+        <div class="val-item"><div class="val-num" style="font-size:28px;color:var(--accent);">${s.score>0?s.score:'—'}</div><div class="val-label">Quality Score</div></div>
+        <div class="val-item"><div class="val-num">${s.pe>0?fmt(s.pe)+'×':'—'}</div><div class="val-label">P/E Ratio</div></div>
+        <div class="val-item"><div class="val-num">${s.price>0?'€'+fmt(s.price,2):'—'}</div><div class="val-label">Price</div></div>
+        <div class="val-item"><div class="val-num">${s.fcf>0?fmt(s.fcf)+'%':'—'}</div><div class="val-label">FCF Yield</div></div>
+      </div>
+      <div class="section-label">SHORT THESIS</div>
+      <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px;">${s.thesis||'No thesis written.'}</p>
+      <div class="section-label">WATCH</div>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:16px;">${s.watch||'—'}</p>
+      <div class="section-label">BREAK THESIS IF</div>
+      <div style="background:rgba(240,80,80,0.06);border:1px solid rgba(240,80,80,0.2);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--muted2);line-height:1.6;">${s.break_thesis||'—'}</div>
+    </div>
+
+    <div class="tab-content" id="dt-rating">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="section-label" style="margin-bottom:0;">100-POINT BREAKDOWN</div>
+        <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--accent);">${s.score>0?s.score:'—'}</div>
+      </div>
+      ${RATING_FIELDS.map(f=>`
+        <div class="rating-row">
+          <div class="rating-label">${f.label}</div>
+          <div class="rating-weight">/${f.weight}</div>
+          <div class="rating-val" style="color:var(--accent);">${s[f.key]||0}</div>
+          <div class="rating-bar-wrap"><div class="rating-bar" style="width:${Math.round(((s[f.key]||0)/f.weight)*80)}px;"></div></div>
+        </div>`).join('')}
+      <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:var(--radius);display:flex;justify-content:space-between;">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">TOTAL</span>
+        <span style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--accent);">${totalScore}</span>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="section-label">DOWNTURN RESISTANCE</div>
+        ${drBadge(s.dr)}
+      </div>
+    </div>
+
+    <div class="tab-content" id="dt-allocation">
+      <div class="val-grid" style="margin-bottom:16px;">
+        <div class="val-item"><div class="val-num" style="color:var(--accent);">${pct(s.target_alloc)}</div><div class="val-label">Target Alloc</div></div>
+        <div class="val-item"><div class="val-num" style="color:var(--muted2);">${pct(s.starter_alloc)}</div><div class="val-label">Starter</div></div>
+        <div class="val-item"><div class="val-num" style="color:var(--green);">${s.t1||'—'}</div><div class="val-label">T1 Entry</div></div>
+        <div class="val-item"><div class="val-num" style="color:var(--blue);">${s.t2||'—'}</div><div class="val-label">T2 Entry</div></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+        <div><div class="section-label">CONVICTION TIER</div><span class="badge badge-compounder" style="font-size:12px;">${(s.conviction||'—').toUpperCase()}</span></div>
+        <div><div class="section-label">PRICE STATUS</div>${statusIcon(s.price_status)}</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="dt-thesis">
+      <div class="section-label">FULL THESIS</div>
+      <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px;">${s.thesis||'No thesis written.'}</p>
+      <div class="section-label">WATCH — KEY KPIS</div>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:16px;">${s.watch||'—'}</p>
+      <div class="section-label">BREAK THESIS IF</div>
+      <div style="background:rgba(240,80,80,0.06);border:1px solid rgba(240,80,80,0.2);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:16px;">${s.break_thesis||'—'}</div>
+      <div class="section-label">NOTES</div>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.6;">${s.notes||'—'}</p>
+    </div>
+
+    <div class="tab-content" id="dt-docs">
+      <div class="section-label">LINKED DOCUMENTS</div>
+      <div class="form-row" style="margin-top:8px;">
+        <div class="form-group"><label>PDF Path</label><input id="doc-pdf" value="${s.pdf_path||''}" placeholder="/path/to/file.pdf"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Report URL/Path</label><input id="doc-report" value="${s.report_path||''}" placeholder="https://..."></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Notes Path</label><input id="doc-notes-path" value="${s.notes_path||''}" placeholder="/path/to/notes.md"></div>
+      </div>
+      <button class="btn btn-accent btn-sm" onclick="saveDocLinks('${s.id}')">Save Document Links</button>
+      ${s.pdf_path?`<div style="margin-top:12px;"><a href="${s.pdf_path}" target="_blank" class="btn btn-sm">Open PDF ↗</a></div>`:''}
+    </div>
+  `;
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+function saveDocLinks(id) {
+  const stocks = load('stocks');
+  const s = stocks.find(x=>x.id===id);
+  if (s) {
+    s.pdf_path = document.getElementById('doc-pdf').value;
+    s.report_path = document.getElementById('doc-report').value;
+    s.notes_path = document.getElementById('doc-notes-path').value;
+    save('stocks', stocks);
+    showToast('Document links saved');
+  }
+}
+
+/* ============================================================
+   ADD / EDIT STOCK MODAL
+   ============================================================ */
+let editingStockId = null;
+
+function buildRatingFormFields() {
+  document.getElementById('rating-form-fields').innerHTML = RATING_FIELDS.map(f=>`
+    <div class="rating-row">
+      <div class="rating-label">${f.label} <span style="color:var(--muted);font-size:10px;">(max ${f.weight})</span></div>
+      <input type="number" id="rf-${f.key}" min="0" max="${f.weight}" style="width:60px;padding:4px 8px;text-align:center;" oninput="updateLiveScore()" placeholder="0">
+    </div>`).join('');
+}
+
+function updateLiveScore() {
+  const total = RATING_FIELDS.reduce((acc,f)=>acc+(parseFloat(document.getElementById('rf-'+f.key)?.value)||0),0);
+  document.getElementById('live-score').textContent = Math.round(total);
+}
+
+function openAddStock() {
+  editingStockId = null;
+  document.getElementById('add-modal-title').textContent = 'Add New Stock';
+  ['f-ticker','f-name','f-country','f-sector','f-price','f-pe','f-eps','f-fcf','f-t1','f-t2','f-target-alloc','f-starter-alloc','f-thesis','f-watch','f-break','f-notes'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  buildRatingFormFields();
+  document.getElementById('modal-add-stock').classList.add('open');
+}
+
+function editStock(id) {
+  const stocks = load('stocks');
+  const s = stocks.find(x=>x.id===id);
+  if (!s) return;
+  editingStockId = id;
+  document.getElementById('add-modal-title').textContent = 'Edit Stock: '+s.name;
+  document.getElementById('f-ticker').value = s.ticker||'';
+  document.getElementById('f-name').value = s.name||'';
+  document.getElementById('f-country').value = s.country||'';
+  document.getElementById('f-sector').value = s.sector||'';
+  document.getElementById('f-type').value = s.type||'compounder';
+  document.getElementById('f-status').value = s.status||'active';
+  document.getElementById('f-price').value = s.price||'';
+  document.getElementById('f-pe').value = s.pe||'';
+  document.getElementById('f-eps').value = s.eps||'';
+  document.getElementById('f-fcf').value = s.fcf||'';
+  document.getElementById('f-target-alloc').value = s.target_alloc||'';
+  document.getElementById('f-starter-alloc').value = s.starter_alloc||'';
+  document.getElementById('f-t1').value = s.t1||'';
+  document.getElementById('f-t2').value = s.t2||'';
+  document.getElementById('f-conviction').value = s.conviction||'core';
+  document.getElementById('f-price-status').value = s.price_status||'waiting';
+  document.getElementById('f-thesis').value = s.thesis||'';
+  document.getElementById('f-watch').value = s.watch||'';
+  document.getElementById('f-break').value = s.break_thesis||'';
+  document.getElementById('f-notes').value = s.notes||'';
+  buildRatingFormFields();
+  RATING_FIELDS.forEach(f=>{
+    const el = document.getElementById('rf-'+f.key);
+    if (el) el.value = s[f.key]||0;
+  });
+  document.getElementById('f-dr').value = s.dr||'YES';
+  updateLiveScore();
+  document.getElementById('modal-add-stock').classList.add('open');
+}
+
+function saveStock() {
+  const stocks = load('stocks');
+  const ratings = {};
+  let total = 0;
+  RATING_FIELDS.forEach(f=>{
+    const v = parseFloat(document.getElementById('rf-'+f.key)?.value)||0;
+    ratings[f.key] = v;
+    total += v;
+  });
+
+  const data = {
+    ticker: document.getElementById('f-ticker').value.trim().toUpperCase(),
+    name: document.getElementById('f-name').value.trim(),
+    country: document.getElementById('f-country').value.trim(),
+    sector: document.getElementById('f-sector').value.trim(),
+    type: document.getElementById('f-type').value,
+    status: document.getElementById('f-status').value,
+    price: parseFloat(document.getElementById('f-price').value)||0,
+    pe: parseFloat(document.getElementById('f-pe').value)||0,
+    eps: parseFloat(document.getElementById('f-eps').value)||0,
+    fcf: parseFloat(document.getElementById('f-fcf').value)||0,
+    ...ratings,
+    score: Math.round(total),
+    dr: document.getElementById('f-dr').value,
+    target_alloc: parseFloat(document.getElementById('f-target-alloc').value)||0,
+    starter_alloc: parseFloat(document.getElementById('f-starter-alloc').value)||0,
+    t1: document.getElementById('f-t1').value.trim(),
+    t2: document.getElementById('f-t2').value.trim(),
+    conviction: document.getElementById('f-conviction').value,
+    price_status: document.getElementById('f-price-status').value,
+    thesis: document.getElementById('f-thesis').value.trim(),
+    watch: document.getElementById('f-watch').value.trim(),
+    break_thesis: document.getElementById('f-break').value.trim(),
+    notes: document.getElementById('f-notes').value.trim(),
+  };
+
+  if (editingStockId) {
+    const idx = stocks.findIndex(s=>s.id===editingStockId);
+    if (idx>=0) { stocks[idx] = { ...stocks[idx], ...data }; }
+  } else {
+    data.id = uid();
+    stocks.push(data);
+  }
+  save('stocks', stocks);
+  closeModal('modal-add-stock');
+  showToast(editingStockId?'Stock updated':'Stock added');
+  renderDashboard();
+  updateBadges();
+}
+
+/* ============================================================
+   PIPELINE MODAL
+   ============================================================ */
+function openAddPipeline() {
+  ['p-ticker','p-name','p-score','p-pe','p-reason','p-trigger'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('p-stage').value='first-pass';
+  document.getElementById('p-dr').value='';
+  document.getElementById('modal-pipeline').classList.add('open');
+}
+
+function savePipeline() {
+  const pipeline = load('pipeline');
+  pipeline.push({
+    id: uid(),
+    ticker: document.getElementById('p-ticker').value.trim().toUpperCase(),
+    name: document.getElementById('p-name').value.trim(),
+    stage: document.getElementById('p-stage').value,
+    score: parseFloat(document.getElementById('p-score').value)||0,
+    pe: parseFloat(document.getElementById('p-pe').value)||0,
+    dr: document.getElementById('p-dr').value,
+    reason: document.getElementById('p-reason').value.trim(),
+    trigger: document.getElementById('p-trigger').value.trim(),
+    reviewed: today(),
+  });
+  save('pipeline', pipeline);
+  closeModal('modal-pipeline');
+  showToast('Candidate added');
+  renderPipeline();
+  updateBadges();
+}
+
+/* ============================================================
+   EARNINGS MODAL
+   ============================================================ */
+let selectedDecision = null;
+
+function openAddEarnings() {
+  selectedDecision = null;
+  document.querySelectorAll('.decision-btn').forEach(b=>b.className='decision-btn');
+  document.getElementById('e-notes').value='';
+  document.getElementById('e-checklist').value='';
+  document.getElementById('e-date').value = today();
+  // Populate company dropdown
+  const stocks = load('stocks');
+  document.getElementById('e-company').innerHTML = stocks.map(s=>`<option value="${s.name}">${s.name} (${s.ticker})</option>`).join('');
+  document.getElementById('modal-earnings').classList.add('open');
+}
+
+function selectDecision(val, el) {
+  selectedDecision = val;
+  document.querySelectorAll('.decision-btn').forEach(b=>b.className='decision-btn');
+  el.className = 'decision-btn selected-'+val.replace('-action','2').replace('no','hold2');
+}
+
+function saveEarnings() {
+  const reviews = load('earnings');
+  const checklistRaw = document.getElementById('e-checklist').value.trim();
+  reviews.push({
+    id: uid(),
+    company: document.getElementById('e-company').value,
+    date: document.getElementById('e-date').value,
+    checklist: checklistRaw?checklistRaw.split('\n').filter(l=>l.trim()):[],
+    notes: document.getElementById('e-notes').value.trim(),
+    decision: selectedDecision,
+  });
+  save('earnings', reviews);
+  closeModal('modal-earnings');
+  showToast('Earnings review saved');
+  renderEarnings();
+}
+
+/* ============================================================
+   TABS / MODALS / TOAST
+   ============================================================ */
+function switchTab(el, contentId) {
+  const parent = el.closest('.tabs');
+  parent.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const modal = el.closest('.modal')||document.body;
+  modal.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById(contentId)?.classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+
+function showToast(msg) {
+  let t = document.getElementById('_toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_toast';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--accent);color:#000;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;z-index:9999;font-family:var(--font-mono);transition:opacity 0.3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(()=>{ t.style.opacity='0'; }, 2000);
+}
+
+
+/* ============================================================
+   REVIEW BUSINESS PAGE
+   ============================================================ */
+
+function renderReview() {
+  // nothing to auto-render, form is static
+}
+
+function generateReviewPrompt() {
+  const name     = document.getElementById('rb-name').value.trim();
+  const ticker   = document.getElementById('rb-ticker').value.trim();
+  if (!name) { showToast('Enter a company name first'); return; }
+
+  const country  = document.getElementById('rb-country').value.trim() || '—';
+  const sector   = document.getElementById('rb-sector').value.trim() || '—';
+  const pe       = document.getElementById('rb-pe').value || '—';
+  const growth   = document.getElementById('rb-growth').value || '—';
+  const margin   = document.getElementById('rb-margin').value || '—';
+  const recurring= document.getElementById('rb-recurring').value || '—';
+  const fcf      = document.getElementById('rb-fcf').value || '—';
+  const debt     = document.getElementById('rb-debt').value.trim() || '—';
+  const roce     = document.getElementById('rb-roce').value || '—';
+  const mcap     = document.getElementById('rb-mcap').value.trim() || '—';
+  const desc     = document.getElementById('rb-description').value.trim() || '—';
+  const revmodel = document.getElementById('rb-revmodel').value || '—';
+  const competitive = document.getElementById('rb-competitive').value || '—';
+  const geo      = document.getElementById('rb-geo').value || '—';
+  const risks    = document.getElementById('rb-risks').value.trim() || '—';
+  const context  = document.getElementById('rb-context').value.trim() || '—';
+
+  const prompt = `I want you to review a new business against my investment framework and produce a full 100-point score.
+
+BUSINESS TO REVIEW:
+- Name: ${name}
+- Ticker: ${ticker}
+- Country: ${country}
+- Sector: ${sector}
+- Market Cap: ${mcap}
+- Current P/E: ${pe}×
+- Revenue Growth (latest): ${growth}%
+- EBIT Margin: ${margin}%
+- Recurring Revenue: ${recurring}%
+- FCF Yield: ${fcf}%
+- Net Debt / Cash: ${debt}
+- ROCE: ${roce}%
+- Revenue Model: ${revmodel}
+- Competitive Position: ${competitive}
+- Geographic Exposure: ${geo}
+
+Business Description:
+${desc}
+
+Key Risks / Initial Concerns:
+${risks}
+
+Additional Context:
+${context}
+
+Please produce:
+
+1. FULL 100-POINT SCORE — score each dimension with a number and one-sentence reasoning:
+   - Moat Strength (max 14):
+   - Business Predictability (max 14):
+   - Growth Durability (max 12):
+   - Revenue Quality (max 12):
+   - Balance Sheet Strength (max 10):
+   - Growth Strength (max 8):
+   - Reinvestment Runway (max 8):
+   - Management Alignment (max 7):
+   - Capital Allocation Quality (max 6):
+   - Return on Capital / ROCE (max 6):
+   - Capex Intensity / Asset-light (max 3):
+   TOTAL SCORE: X/100
+
+2. DOWNTURN RESISTANCE: YES / NEUTRAL / NO — with one-sentence rationale.
+
+3. SHORT THESIS (2-3 sentences): Core investment case.
+
+4. WATCH — Key KPIs to monitor.
+
+5. BREAK THESIS IF — specific conditions that would invalidate the investment case.
+
+6. VERDICT vs MY EXISTING CANDIDATES — how does it compare to my current list? Should it go to Pipeline (watchlist / rated), or does it not meet the bar at all?
+
+7. REVISIT TRIGGER — what would need to change (valuation, fundamentals, or events) to re-evaluate?
+
+Format the score section clearly with each line as: "Metric: X/max — reason"`;
+
+  document.getElementById('review-prompt-text').value = prompt;
+  document.getElementById('review-prompt-box').style.display = 'block';
+  document.getElementById('copy-prompt-btn').style.display = 'inline-flex';
+}
+
+function copyPrompt() {
+  const text = document.getElementById('review-prompt-text').value;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Prompt copied — paste into Claude.ai');
+    document.getElementById('copy-prompt-btn').textContent = '✓ Copied!';
+    setTimeout(() => { document.getElementById('copy-prompt-btn').textContent = '⎘ Copy to Clipboard'; }, 2000);
+  }).catch(() => {
+    document.getElementById('review-prompt-text').select();
+    showToast('Select all and copy manually (Ctrl+A, Ctrl+C)');
+  });
+}
+
+function parseAndPreview() {
+  const raw = document.getElementById('import-response').value.trim();
+  if (!raw) { showToast('Paste Claude's response first'); return; }
+
+  // Extract total score
+  const scoreMatch = raw.match(/TOTAL\s*SCORE[:\s]+(\d+)/i) || raw.match(/Total[:\s]+(\d+)\s*\/\s*100/i) || raw.match(/(\d+)\s*\/\s*100/i);
+  const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+
+  // Extract individual ratings
+  const ratingPatterns = [
+    { key:'moat',              label:'Moat Strength',          regex:/Moat Strength[:\s]+(\d+)/i },
+    { key:'predictability',    label:'Predictability',         regex:/Predictability[:\s]+(\d+)/i },
+    { key:'growth_durability', label:'Growth Durability',      regex:/Growth Durability[:\s]+(\d+)/i },
+    { key:'revenue_quality',   label:'Revenue Quality',        regex:/Revenue Quality[:\s]+(\d+)/i },
+    { key:'balance_sheet',     label:'Balance Sheet',          regex:/Balance Sheet[:\s]+(\d+)/i },
+    { key:'growth_strength',   label:'Growth Strength',        regex:/Growth Strength[:\s]+(\d+)/i },
+    { key:'reinvestment_runway', label:'Reinvestment Runway',  regex:/Reinvestment Runway[:\s]+(\d+)/i },
+    { key:'management',        label:'Management',             regex:/Management[^\n]*[:\s]+(\d+)/i },
+    { key:'capital_allocation', label:'Capital Allocation',    regex:/Capital Allocation[:\s]+(\d+)/i },
+    { key:'roce',              label:'ROCE',                   regex:/(?:ROCE|Return on Capital)[:\s]+(\d+)/i },
+    { key:'capex_intensity',   label:'Capex Intensity',        regex:/Capex[:\s]+(\d+)/i },
+  ];
+  const extractedRatings = {};
+  ratingPatterns.forEach(p => {
+    const m = raw.match(p.regex);
+    extractedRatings[p.key] = m ? parseInt(m[1]) : 0;
+  });
+
+  // Extract DR
+  const drMatch = raw.match(/DOWNTURN RESISTANCE[:\s]+(YES|NEUTRAL|NO)/i);
+  const dr = drMatch ? drMatch[1].toUpperCase() : '';
+
+  // Extract thesis — text after SHORT THESIS
+  const thesisMatch = raw.match(/SHORT THESIS[:\s
+]+([\s\S]{20,300}?)(?:
+
+|
+\d\.|
+WATCH|$)/i);
+  const thesis = thesisMatch ? thesisMatch[1].trim().replace(/^[-–•]\s*/,'') : '';
+
+  // Extract risks
+  const riskMatch = raw.match(/(?:BREAK THESIS|KEY RISKS|RISKS)[:\s
+]+([\s\S]{10,300}?)(?:
+
+|
+\d\.|
+VERDICT|$)/i);
+  const risks = riskMatch ? riskMatch[1].trim() : '';
+
+  // Extract revisit trigger
+  const triggerMatch = raw.match(/REVISIT TRIGGER[:\s
+]+([\s\S]{10,200}?)(?:
+
+|
+\d\.|$)/i);
+  const trigger = triggerMatch ? triggerMatch[1].trim() : '';
+
+  // Populate fields
+  document.getElementById('imp-score').value = score || '';
+  if (dr) document.getElementById('imp-dr').value = dr;
+  document.getElementById('imp-thesis').value = thesis;
+  document.getElementById('imp-reason').value = risks;
+  document.getElementById('imp-trigger').value = trigger;
+
+  // Show score grid
+  const grid = document.getElementById('parsed-scores-grid');
+  const WEIGHTS = {moat:14,predictability:14,growth_durability:12,revenue_quality:12,balance_sheet:10,growth_strength:8,reinvestment_runway:8,management:7,capital_allocation:6,roce:6,capex_intensity:3};
+  grid.innerHTML = ratingPatterns.map(p => {
+    const val = extractedRatings[p.key] || 0;
+    const max = WEIGHTS[p.key] || 14;
+    const pct = Math.round((val/max)*100);
+    return `<div class="val-item" style="text-align:left;padding:10px 12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:10px;color:var(--muted2);">${p.label}</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:600;">${val}<span style="color:var(--muted);font-size:10px;">/${max}</span></span>
+      </div>
+      <div style="height:3px;background:var(--surface3);border-radius:2px;">
+        <div style="height:3px;width:${pct}%;background:var(--accent);border-radius:2px;"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Store ratings for save
+  window._parsedRatings = extractedRatings;
+
+  document.getElementById('parsed-preview').style.display = 'block';
+  document.getElementById('parsed-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showToast('Score parsed — review and save');
+}
+
+function saveImportedToPipeline() {
+  const ticker = document.getElementById('rb-ticker').value.trim().toUpperCase() || '—';
+  const name   = document.getElementById('rb-name').value.trim() || 'Unknown';
+  const score  = parseInt(document.getElementById('imp-score').value) || 0;
+  const dr     = document.getElementById('imp-dr').value;
+  const stage  = document.getElementById('imp-stage').value;
+  const reason = document.getElementById('imp-reason').value.trim();
+  const trigger= document.getElementById('imp-trigger').value.trim();
+  const pe     = parseFloat(document.getElementById('rb-pe').value) || 0;
+
+  const pipeline = load('pipeline');
+  pipeline.push({
+    id: uid(),
+    ticker, name, stage, score, pe, dr,
+    reason, trigger,
+    reviewed: today(),
+    thesis: document.getElementById('imp-thesis').value.trim(),
+    ratings: window._parsedRatings || {},
+  });
+  save('pipeline', pipeline);
+  closeReviewAndGo('pipeline');
+  showToast(`${name} saved to Pipeline`);
+  updateBadges();
+}
+
+function saveImportedToFullCandidates() {
+  const r = window._parsedRatings || {};
+  const ticker = document.getElementById('rb-ticker').value.trim().toUpperCase();
+  const name   = document.getElementById('rb-name').value.trim();
+  const score  = parseInt(document.getElementById('imp-score').value) || 0;
+
+  // Pre-fill the add stock modal with what we have
+  openAddStock();
+  document.getElementById('f-ticker').value = ticker;
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-country').value = document.getElementById('rb-country').value;
+  document.getElementById('f-sector').value = document.getElementById('rb-sector').value;
+  document.getElementById('f-pe').value = document.getElementById('rb-pe').value;
+  document.getElementById('f-status').value = 'watchlist';
+  document.getElementById('f-dr').value = document.getElementById('imp-dr').value || 'NEUTRAL';
+  document.getElementById('f-thesis').value = document.getElementById('imp-thesis').value;
+  document.getElementById('f-break').value = document.getElementById('imp-reason').value;
+
+  // Fill ratings
+  buildRatingFormFields();
+  setTimeout(() => {
+    Object.entries(r).forEach(([key, val]) => {
+      const el = document.getElementById('rf-' + key);
+      if (el) el.value = val;
+    });
+    updateLiveScore();
+  }, 50);
+}
+
+function closeReviewAndGo(page) {
+  showPage(page);
+}
+
+function clearReviewForm() {
+  ['rb-name','rb-ticker','rb-country','rb-sector','rb-pe','rb-growth','rb-margin',
+   'rb-recurring','rb-fcf','rb-debt','rb-roce','rb-mcap','rb-description',
+   'rb-risks','rb-context','import-response','imp-thesis','imp-reason','imp-trigger'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('review-prompt-box').style.display = 'none';
+  document.getElementById('copy-prompt-btn').style.display = 'none';
+  document.getElementById('parsed-preview').style.display = 'none';
+  window._parsedRatings = {};
+  showToast('Form cleared');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function forceReset() {
+  if (!confirm('This will clear all local data and restore the default candidates. Any custom edits will be lost. Continue?')) return;
+  Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+  seedData();
+  saveObj('flow', { regime:'low-cheap', alloc:80, notes:'Pre-correction phase. FLOW is dominant holding while compounders are seeded.', updated: today() });
+  renderDashboard();
+  updateBadges();
+  showToast('Data reset to defaults');
+}
+
+function resetSeedData() {
+  if (!confirm('This will update the built-in candidates to their latest P/E ratios. Your custom edits to these stocks will be overwritten. Continue?')) return;
+  localStorage.removeItem(STORAGE_KEYS.stocks);
+  localStorage.removeItem(STORAGE_KEYS.pipeline);
+  seedData();
+  renderDashboard();
+  updateBadges();
+  showToast('P/E data refreshed to latest values');
+}
+
+function init() {
+  seedData();
+  document.getElementById('nav-date').textContent = today();
+  renderDashboard();
+  updateBadges();
+  buildRatingFormFields();
+}
+
+init();
+</script>
+
+</body>
+</html>
