@@ -2429,25 +2429,28 @@ function copyPrompt() {
 
 function parseAndPreview() {
   const raw = document.getElementById('import-response').value.trim();
-  if (!raw) { showToast('Paste Claude's response first'); return; }
+  if (!raw) { showToast('Paste Claude response first'); return; }
 
   // Extract total score
-  const scoreMatch = raw.match(/TOTAL\s*SCORE[:\s]+(\d+)/i) || raw.match(/Total[:\s]+(\d+)\s*\/\s*100/i) || raw.match(/(\d+)\s*\/\s*100/i);
-  const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+  let score = 0;
+  const sm1 = raw.match(/TOTAL[^\n]*?(\d+)/i);
+  const sm2 = raw.match(/(\d+)\s*\/\s*100/i);
+  if (sm1) score = parseInt(sm1[1]);
+  else if (sm2) score = parseInt(sm2[1]);
 
   // Extract individual ratings
   const ratingPatterns = [
-    { key:'moat',              label:'Moat Strength',          regex:/Moat Strength[:\s]+(\d+)/i },
-    { key:'predictability',    label:'Predictability',         regex:/Predictability[:\s]+(\d+)/i },
-    { key:'growth_durability', label:'Growth Durability',      regex:/Growth Durability[:\s]+(\d+)/i },
-    { key:'revenue_quality',   label:'Revenue Quality',        regex:/Revenue Quality[:\s]+(\d+)/i },
-    { key:'balance_sheet',     label:'Balance Sheet',          regex:/Balance Sheet[:\s]+(\d+)/i },
-    { key:'growth_strength',   label:'Growth Strength',        regex:/Growth Strength[:\s]+(\d+)/i },
-    { key:'reinvestment_runway', label:'Reinvestment Runway',  regex:/Reinvestment Runway[:\s]+(\d+)/i },
-    { key:'management',        label:'Management',             regex:/Management[^\n]*[:\s]+(\d+)/i },
-    { key:'capital_allocation', label:'Capital Allocation',    regex:/Capital Allocation[:\s]+(\d+)/i },
-    { key:'roce',              label:'ROCE',                   regex:/(?:ROCE|Return on Capital)[:\s]+(\d+)/i },
-    { key:'capex_intensity',   label:'Capex Intensity',        regex:/Capex[:\s]+(\d+)/i },
+    { key:'moat',              label:'Moat Strength',        regex:/Moat[^\n]*?(\d+)\s*\/\s*14/i },
+    { key:'predictability',    label:'Predictability',       regex:/Predictability[^\n]*?(\d+)\s*\/\s*14/i },
+    { key:'growth_durability', label:'Growth Durability',    regex:/Growth Durability[^\n]*?(\d+)\s*\/\s*12/i },
+    { key:'revenue_quality',   label:'Revenue Quality',      regex:/Revenue Quality[^\n]*?(\d+)\s*\/\s*12/i },
+    { key:'balance_sheet',     label:'Balance Sheet',        regex:/Balance Sheet[^\n]*?(\d+)\s*\/\s*10/i },
+    { key:'growth_strength',   label:'Growth Strength',      regex:/Growth Strength[^\n]*?(\d+)\s*\/\s*8/i },
+    { key:'reinvestment_runway', label:'Reinvestment Runway',regex:/Reinvestment[^\n]*?(\d+)\s*\/\s*8/i },
+    { key:'management',        label:'Management',           regex:/Management[^\n]*?(\d+)\s*\/\s*7/i },
+    { key:'capital_allocation', label:'Capital Allocation',  regex:/Capital Allocation[^\n]*?(\d+)\s*\/\s*6/i },
+    { key:'roce',              label:'ROCE',                 regex:/ROCE[^\n]*?(\d+)\s*\/\s*6/i },
+    { key:'capex_intensity',   label:'Capex Intensity',      regex:/Capex[^\n]*?(\d+)\s*\/\s*3/i },
   ];
   const extractedRatings = {};
   ratingPatterns.forEach(p => {
@@ -2456,34 +2459,33 @@ function parseAndPreview() {
   });
 
   // Extract DR
-  const drMatch = raw.match(/DOWNTURN RESISTANCE[:\s]+(YES|NEUTRAL|NO)/i);
+  const drMatch = raw.match(/DOWNTURN RESISTANCE[^\n]*(YES|NEUTRAL|NO)/i);
   const dr = drMatch ? drMatch[1].toUpperCase() : '';
 
-  // Extract thesis — text after SHORT THESIS
-  const thesisMatch = raw.match(/SHORT THESIS[:\s
-]+([\s\S]{20,300}?)(?:
-
-|
-\d\.|
-WATCH|$)/i);
-  const thesis = thesisMatch ? thesisMatch[1].trim().replace(/^[-–•]\s*/,'') : '';
+  // Extract thesis — text after SHORT THESIS header
+  let thesis = '';
+  const thIdx = raw.indexOf('SHORT THESIS');
+  if (thIdx > -1) {
+    const thSlice = raw.slice(thIdx + 12, thIdx + 400).trim();
+    thesis = thSlice.split('\n\n')[0].replace(/^[:—\-\s]+/, '').slice(0, 300).trim();
+  }
 
   // Extract risks
-  const riskMatch = raw.match(/(?:BREAK THESIS|KEY RISKS|RISKS)[:\s
-]+([\s\S]{10,300}?)(?:
-
-|
-\d\.|
-VERDICT|$)/i);
-  const risks = riskMatch ? riskMatch[1].trim() : '';
+  let risks = '';
+  const rkIdx = raw.search(/BREAK THESIS|KEY RISKS/i);
+  if (rkIdx > -1) {
+    const rkSlice = raw.slice(rkIdx, rkIdx + 400);
+    const rkBody = rkSlice.replace(/BREAK THESIS IF|BREAK THESIS|KEY RISKS/i, '').trim();
+    risks = rkBody.split('\n\n')[0].replace(/^[:—\-\s]+/, '').slice(0, 300).trim();
+  }
 
   // Extract revisit trigger
-  const triggerMatch = raw.match(/REVISIT TRIGGER[:\s
-]+([\s\S]{10,200}?)(?:
-
-|
-\d\.|$)/i);
-  const trigger = triggerMatch ? triggerMatch[1].trim() : '';
+  let trigger = '';
+  const trIdx = raw.search(/REVISIT TRIGGER/i);
+  if (trIdx > -1) {
+    const trSlice = raw.slice(trIdx, trIdx + 300);
+    trigger = trSlice.replace(/REVISIT TRIGGER/i, '').replace(/^[:—\-\s]+/, '').split('\n\n')[0].slice(0, 200).trim();
+  }
 
   // Populate fields
   document.getElementById('imp-score').value = score || '';
@@ -2499,20 +2501,17 @@ VERDICT|$)/i);
     const val = extractedRatings[p.key] || 0;
     const max = WEIGHTS[p.key] || 14;
     const pct = Math.round((val/max)*100);
-    return `<div class="val-item" style="text-align:left;padding:10px 12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-size:10px;color:var(--muted2);">${p.label}</span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:600;">${val}<span style="color:var(--muted);font-size:10px;">/${max}</span></span>
-      </div>
-      <div style="height:3px;background:var(--surface3);border-radius:2px;">
-        <div style="height:3px;width:${pct}%;background:var(--accent);border-radius:2px;"></div>
-      </div>
-    </div>`;
+    return '<div class="val-item" style="text-align:left;padding:10px 12px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+      '<span style="font-size:10px;color:var(--muted2);">' + p.label + '</span>' +
+      '<span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:600;">' + val + '<span style="color:var(--muted);font-size:10px;">/' + max + '</span></span>' +
+      '</div>' +
+      '<div style="height:3px;background:var(--surface3);border-radius:2px;">' +
+      '<div style="height:3px;width:' + pct + '%;background:var(--accent);border-radius:2px;"></div>' +
+      '</div></div>';
   }).join('');
 
-  // Store ratings for save
   window._parsedRatings = extractedRatings;
-
   document.getElementById('parsed-preview').style.display = 'block';
   document.getElementById('parsed-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
   showToast('Score parsed — review and save');
@@ -2614,11 +2613,36 @@ function resetSeedData() {
 }
 
 function init() {
-  seedData();
-  document.getElementById('nav-date').textContent = today();
-  renderDashboard();
-  updateBadges();
-  buildRatingFormFields();
+  try {
+    // Force clear any bad state and reseed
+    const stocks = load('stocks');
+    if (!stocks || !Array.isArray(stocks) || stocks.length === 0 || !stocks[0] || !stocks[0].ticker) {
+      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+    }
+    seedData();
+    // Verify seed worked
+    const afterSeed = load('stocks');
+    if (!afterSeed || afterSeed.length === 0) {
+      console.error('[Panel] seedData failed — retrying with clean slate');
+      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      seedData();
+    }
+    document.getElementById('nav-date').textContent = today();
+    renderDashboard();
+    updateBadges();
+    buildRatingFormFields();
+  } catch(e) {
+    console.error('[Panel] Init error:', e);
+    // Last resort — nuke everything and try again
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      seedData();
+      renderDashboard();
+      updateBadges();
+    } catch(e2) {
+      console.error('[Panel] Fatal init error:', e2);
+    }
+  }
 }
 
 init();
