@@ -614,6 +614,44 @@ label {
   letter-spacing: 0.04em;
 }
 
+/* ── TOOLTIPS ────────────────────────────────────────────── */
+.tooltip-wrap { position: relative; cursor: help; }
+.tooltip-box {
+  display: none;
+  position: absolute;
+  left: 0; top: calc(100% + 6px);
+  width: 280px;
+  background: var(--text);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 10px 13px;
+  border-radius: 9px;
+  z-index: 999;
+  box-shadow: 0 8px 24px rgba(15,35,24,0.2);
+  pointer-events: none;
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+.tooltip-box::before {
+  content: '';
+  position: absolute;
+  top: -5px; left: 18px;
+  width: 10px; height: 10px;
+  background: var(--text);
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.tooltip-wrap:hover .tooltip-box { display: block; }
+.tooltip-score {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
 /* ── RESPONSIVE ──────────────────────────────────────────── */
 @media (max-width: 900px) {
   #nav { display: none; }
@@ -1296,7 +1334,20 @@ function seedData() {
         notes:'FY2026 full year: revenue ¥148.3B (+27% YoY), net income ¥37.8B, EPS ¥249.16. FY2027 guided: ¥190B revenue (+28%), ¥48.1B profit. T1 entry: ¥4,000-4,500 (P/E ~16-18×). T2: ¥3,200-3,800. Could replace KSPI (score 78, higher country risk) if valuation compresses.',
         t1:'4000-4500', t2:'3200-3800',
         latest_earnings:'FY2026 (Feb 28, 2026): Revenue ¥148.3B +27% YoY, Net Income ¥37.8B +22.8% YoY, EPS ¥249.16. EBITDA margin 33.9%. Gross margin 55.8%. FY2027 guided at ¥190B revenue (+28%) and ¥48.1B profit. Dividend raised to ¥65/share.',
-        reviewed_by:'Claude', reviewed_date:'2026-05-01', status:'pending' }
+        reviewed_by:'Claude', reviewed_date:'2026-05-01', status:'pending',
+        reasoning:{
+          moat:'Real but not a fortress. Client stickiness exists through embedded teams and institutional knowledge, but consulting firms can be replaced without proprietary IP lock-in. Better than a commodity firm, weaker than Rakus or Medistim.',
+          predictability:'Project-based revenue introduces lumpiness — unlike SaaS it is not contractually recurring. However, long client relationships and 5 consecutive years of beating guidance add meaningful confidence.',
+          growth_durability:'Japan digital transformation is structurally underpenetrated and AI consulting demand is accelerating. Management targets 20% annual growth through FY2029 with high credibility. Limiting factor is headcount scaling.',
+          revenue_quality:'Key weakness. No recurring SaaS or transaction revenue — pure professional services billed by project. High-quality long-term clients partially offset this but it remains fundamentally project-based.',
+          balance_sheet:'Net cash, no debt, strong FCF generation (~¥30B+ annually). Clean as it gets. One point off for having no financial leverage option if needed.',
+          growth_strength:'Revenue +26.8% YoY in Q3 FY2026, full-year forecast +23.2%. FY2027 guided at +28%. Five consecutive years of 20%+ growth. Full marks.',
+          reinvestment_runway:'Japan digital transformation is early. BayCurrent is adding ~600 consultants per year. Reinvestment returns are high. Risk is that runway eventually gets crowded with competitors.',
+          management:'Targets clearly stated (20% growth, 30-40% EBITDA through 2029) and consistently hit. Dividend raised. One point off for ISS governance score of 4.',
+          capital_allocation:'FCF yield ~24% of revenue is exceptional. Dividends growing. No dilutive acquisitions. Conservative and shareholder-friendly. One point off — capital return programme could be more aggressive given the cash position.',
+          roce:'5-year average ROCE of 19.5% — well above the 12% benchmark. Asset-light model makes this naturally high.',
+          capex_intensity:'Pure consulting. Capex is essentially zero. Full marks.'
+        } }
     ];
     save('reviews', reviews);
   }
@@ -2324,17 +2375,21 @@ function renderReview() {
 
   function renderReviewCard(r, isPending) {
     const scoreColor = r.score >= 84 ? 'var(--accent)' : r.score >= 78 ? 'var(--gold)' : 'var(--red)';
+    const reasoning = r.reasoning || {};
     const ratingRows = Object.keys(WEIGHTS).map(k => {
       const val = r[k] || 0;
       const max = WEIGHTS[k];
       const pct = Math.round((val/max)*100);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+      const reason = reasoning[k] || '';
+      const tooltipHtml = reason ? `<div class="tooltip-box"><div class="tooltip-score">${LABELS[k]}: ${val}/${max}</div>${reason}</div>` : '';
+      return `<div class="tooltip-wrap" style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
         <span style="flex:1;font-size:11px;color:var(--muted2);">${LABELS[k]}</span>
         <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);">/${max}</span>
         <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:${scoreColor};width:24px;text-align:right;">${val}</span>
         <div style="width:80px;height:3px;background:var(--surface3);border-radius:2px;">
           <div style="height:3px;width:${pct}%;background:${scoreColor};border-radius:2px;"></div>
         </div>
+        ${tooltipHtml}
       </div>`;
     }).join('');
 
