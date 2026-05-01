@@ -1630,12 +1630,15 @@ function renderBubble() {
     hovertemplate:'<b>%{customdata[0]}</b><br>Score: %{x}<br>P/E: %{customdata[1]}×<br>DR: %{customdata[2]}<extra></extra>'
   }));
 
-  // Fair value curve: P/E = 6 + (score - 60) * 0.42  — rises with quality
+  // Fair value curve: steeper at high quality — score 100 justifies ~50x P/E
+  // Formula: P/E = 4 + ((score - 60) / 40)^1.8 * 50
+  // score 60→4x, 70→10x, 80→20x, 87→28x, 90→33x, 95→41x, 100→54x
   const curveX = [];
   const curveY = [];
   for (let s = 60; s <= 100; s += 0.5) {
+    const pe = 4 + Math.pow((s - 60) / 40, 1.8) * 50;
     curveX.push(s);
-    curveY.push(Math.round((6 + (s - 60) * 0.42) * 10) / 10);
+    curveY.push(Math.round(pe * 10) / 10);
   }
   // Fill area under curve — add reversed arrays for filled shape
   const fillX = [...curveX, ...curveX.slice().reverse()];
