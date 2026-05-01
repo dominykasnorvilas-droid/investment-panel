@@ -1335,6 +1335,7 @@ function seedData() {
         t1:'4000-4500', t2:'3200-3800',
         latest_earnings:'FY2026 (Feb 28, 2026): Revenue ¥148.3B +27% YoY, Net Income ¥37.8B +22.8% YoY, EPS ¥249.16. EBITDA margin 33.9%. Gross margin 55.8%. FY2027 guided at ¥190B revenue (+28%) and ¥48.1B profit. Dividend raised to ¥65/share.',
         reviewed_by:'Claude', reviewed_date:'2026-05-01', status:'pending',
+        replace_analysis:'<strong>Best replacement candidate: KSPI (Kaspi.kz)</strong><br><br>BayCurrent scores 81 vs KSPI\'s 78 — a meaningful 3-point quality advantage. At 20.4× P/E vs KSPI\'s 7.2×, BayCurrent is more expensive, but KSPI\'s cheap valuation is entirely explained by country risk (Kazakhstan), regulatory exposure, and currency risk — risks that sit outside your framework\'s comfort zone. BayCurrent operates in Japan, a stable rule-of-law market, with structural tailwinds (digitalization, AI) that are arguably more durable than KSPI\'s ecosystem growth.<br><br>Both are NEUTRAL on Downturn Resistance. The key difference: BayCurrent\'s 20× P/E with 27% revenue growth gives you a better quality-adjusted entry point than KSPI at 7× where the discount is a risk premium, not a margin of safety.<br><br><strong>Verdict:</strong> If you are comfortable with consulting-style revenue (project-based, not SaaS-recurring), BayCurrent replacing KSPI is a quality upgrade with lower geopolitical risk.',
         reasoning:{
           moat:'Real but not a fortress. Client stickiness exists through embedded teams and institutional knowledge, but consulting firms can be replaced without proprietary IP lock-in. Better than a commodity firm, weaker than Rakus or Medistim.',
           predictability:'Project-based revenue introduces lumpiness — unlike SaaS it is not contractually recurring. However, long client relationships and 5 consecutive years of beating guidance add meaningful confidence.',
@@ -2308,6 +2309,75 @@ function showToast(msg) {
    REVIEW BUSINESS PAGE
    ============================================================ */
 
+function renderReviewChart(r) {
+  const chartId = 'review-chart-' + r.id;
+  const el = document.getElementById(chartId);
+  if (!el) return;
+
+  const stocks = load('stocks').filter(s => s.status === 'active' && s.score > 0 && s.pe > 0);
+
+  // Fair value curve
+  const curveX = [], curveY = [];
+  for (let s = 60; s <= 100; s += 0.5) {
+    curveX.push(s);
+    curveY.push(Math.round((4 + Math.pow((s-60)/40, 1.8) * 50) * 10) / 10);
+  }
+  const fillX = [...curveX, ...curveX.slice().reverse()];
+  const fillY = [...curveY, ...curveX.slice().reverse().map(() => 0)];
+
+  const traces = [
+    // Fill under curve
+    { type:'scatter', mode:'none', x:fillX, y:fillY,
+      fill:'toself', fillcolor:'rgba(26,122,69,0.06)',
+      line:{color:'transparent'}, hoverinfo:'skip', showlegend:false },
+    // Fair value curve line
+    { type:'scatter', mode:'lines', name:'Fair value curve',
+      x:curveX, y:curveY,
+      line:{color:'rgba(26,122,69,0.35)',width:1.5,dash:'dot'},
+      hoverinfo:'skip', showlegend:false },
+    // Current candidates
+    { type:'scatter', mode:'markers+text',
+      name:'Current candidates',
+      x: stocks.map(s => s.score),
+      y: stocks.map(s => s.pe),
+      text: stocks.map(s => s.ticker),
+      textposition: 'top center',
+      textfont: { size:11, color:'#0f2318', family:'Plus Jakarta Sans' },
+      marker: { size:13, color:'#1a7a45', opacity:0.9, line:{color:'#fff',width:2} },
+      customdata: stocks.map(s => [s.name, s.pe, s.dr]),
+      hovertemplate:'<b>%{customdata[0]}</b><br>Score: %{x}<br>P/E: %{customdata[1]}×<br>DR: %{customdata[2]}<extra></extra>' },
+    // Reviewed business
+    { type:'scatter', mode:'markers+text',
+      name: r.name + ' (reviewing)',
+      x: [r.score],
+      y: [r.pe],
+      text: [r.ticker],
+      textposition: 'top center',
+      textfont: { size:12, color:'#e07820', family:'Plus Jakarta Sans', weight:'bold' },
+      marker: { size:16, color:'#e07820', opacity:0.95, line:{color:'#fff',width:2.5},
+        symbol:'diamond' },
+      hovertemplate:`<b>${r.name}</b><br>Score: ${r.score}<br>P/E: ${r.pe}×<br>DR: ${r.dr}<extra></extra>` },
+  ];
+
+  const allScores = [r.score, ...stocks.map(s=>s.score)];
+  const allPEs = [r.pe, ...stocks.map(s=>s.pe)];
+  const minScore = Math.max(60, Math.min(...allScores) - 5);
+  const maxPE = Math.min(65, Math.max(...allPEs) + 10);
+
+  Plotly.newPlot(chartId, traces, {
+    paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+    font:{family:'Plus Jakarta Sans, sans-serif',color:'#6b8c76',size:11},
+    margin:{l:44,r:20,t:10,b:44},
+    xaxis:{title:'Quality Score',gridcolor:'rgba(15,35,24,0.07)',zeroline:false,
+      range:[minScore, 102], titlefont:{color:'#4a6b57',size:11}},
+    yaxis:{title:'P/E ×',gridcolor:'rgba(15,35,24,0.07)',zeroline:false,
+      range:[0, maxPE], titlefont:{color:'#4a6b57',size:11}},
+    legend:{orientation:'h',y:-0.2,x:0.5,xanchor:'center',font:{size:11,color:'#4a6b57'}},
+    hoverlabel:{bgcolor:'#ffffff',bordercolor:'#e2ebe5',
+      font:{family:'Plus Jakarta Sans',size:12,color:'#0f2318'}}
+  }, {responsive:true, displayModeBar:false});
+}
+
 function formatEarningsMetrics(raw) {
   // Parse key metrics from the earnings string and render as highlight tiles
   const metrics = [];
@@ -2515,8 +2585,36 @@ function renderReview() {
         </div>
       </div>
 
+      <!-- REPLACEMENT ANALYSIS -->
+      ${r.replace_analysis ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.08em;margin-bottom:12px;">REPLACEMENT ANALYSIS</div>
+        <div style="background:linear-gradient(135deg,rgba(26,122,69,0.05),rgba(26,95,122,0.05));border:1px solid var(--accent-border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.7;">
+          ${r.replace_analysis}
+        </div>
+      </div>` : ''}
+
+      <!-- QUALITY VS VALUATION COMPARISON CHART -->
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.08em;margin-bottom:12px;">QUALITY VS. VALUATION — COMPARISON WITH CURRENT CANDIDATES</div>
+        <div id="review-chart-${r.id}" style="height:320px;width:100%;"></div>
+        <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted2);">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);"></div> Current candidates
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted2);">
+            <div style="width:10px;height:10px;border-radius:50%;background:#e07820;"></div> ${r.name} (under review)
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted2);">
+            <div style="width:12px;height:2px;background:rgba(26,122,69,0.4);border-top:1px dashed rgba(26,122,69,0.4);"></div> Fair value curve
+          </div>
+        </div>
+      </div>
+
       ${decisionBtns}
     </div>`;
+
+  // Render chart after DOM update
+  setTimeout(() => renderReviewChart(r), 50);
   }
 
   let html = '';
