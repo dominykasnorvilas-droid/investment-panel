@@ -660,7 +660,7 @@ label {
     </div>
     <div class="nav-section-label">Tools</div>
     <div class="nav-item" data-page="review" onclick="showPage('review')">
-      <span class="icon">✦</span> Review Business
+      <span class="icon">✦</span> Review Business <span class="badge" id="badge-reviews" style="background:rgba(192,57,43,0.15);color:var(--red);">1</span>
     </div>
     <div class="nav-section-label">Records</div>
     <div class="nav-item" data-page="documents" onclick="showPage('documents')">
@@ -908,156 +908,17 @@ label {
   <div class="page" id="page-review">
     <div class="page-header">
       <div>
-        <div class="page-title">Review a Business</div>
-        <div class="page-subtitle">ASK CLAUDE → GET FULL ANALYSIS → DECIDE</div>
+        <div class="page-title">Business Reviews</div>
+        <div class="page-subtitle">CLAUDE-RESEARCHED — DECIDE: WATCHLIST / CANDIDATES / REJECT</div>
       </div>
     </div>
 
-    <!-- STEP 1: PROMPT -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">1</div>
-        <div class="card-title-lg" style="margin-bottom:0;">Ask Claude to Research a Business</div>
-      </div>
-      <div class="notice notice-info" style="margin-bottom:14px;">
-        <span class="notice-icon">◎</span>
-        <span>Type a company name or ticker in this conversation — e.g. <strong>"Check 6532 Bay Current"</strong> or <strong>"Research Nemetschek NEM.DE"</strong>. Claude will fetch latest data, score it against your 100-point framework, compare to your holdings, and return a structured review. Paste the result below.</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:4px;">
-        <span style="font-size:18px;">◎</span>
-        <span style="font-size:13px;color:var(--muted2);">Go to your <strong>Claude.ai</strong> tab and type: <span style="font-family:var(--font-mono);background:var(--surface3);padding:2px 8px;border-radius:4px;color:var(--accent);font-size:12px;">Review [company name / ticker] for my investment panel</span></span>
-      </div>
+    <div class="notice notice-success" style="margin-bottom:20px;">
+      <span class="notice-icon">◎</span>
+      <span>To review a new business, go to your <strong>Claude.ai</strong> tab and type: <span style="font-family:var(--font-mono);background:var(--surface3);padding:2px 8px;border-radius:4px;color:var(--accent);font-size:12px;">Check: [Company Name, Ticker]</span> — Claude will research, score, and push the review here automatically.</span>
     </div>
 
-    <!-- STEP 2: PASTE RESPONSE -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">2</div>
-        <div class="card-title-lg" style="margin-bottom:0;">Paste Claude's Analysis</div>
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>Paste the full response from Claude here</label>
-        <textarea id="import-response" rows="12" placeholder="Paste Claude's full review here...&#10;&#10;The panel will extract: company name, ticker, score, individual ratings, downturn resistance, thesis, checklist, break thesis, and revisit trigger automatically."></textarea>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-accent" onclick="parseAndPreview()" style="flex:1;">Parse & Preview</button>
-        <button class="btn" onclick="clearReviewForm()">Clear</button>
-      </div>
-    </div>
-
-    <!-- STEP 3: PARSED PREVIEW + DECISION -->
-    <div id="parsed-preview" style="display:none;">
-      <div class="card" style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">3</div>
-          <div class="card-title-lg" style="margin-bottom:0;">Review Parsed Data</div>
-        </div>
-
-        <!-- Company header -->
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
-          <div id="preview-score-ring" style="width:64px;height:64px;border-radius:50%;border:2px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;background:var(--accent-bg);">
-            <div id="preview-score-num" style="font-size:20px;font-weight:800;color:var(--accent);line-height:1;">—</div>
-            <div style="font-size:8px;color:var(--muted);font-family:var(--font-mono);">SCORE</div>
-          </div>
-          <div style="flex:1;">
-            <div id="preview-company-name" style="font-family:var(--font-display);font-size:20px;color:var(--text);margin-bottom:4px;">—</div>
-            <div id="preview-badges" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-          </div>
-          <div style="text-align:right;">
-            <div id="preview-pe" style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text2);">—</div>
-            <div style="font-size:10px;color:var(--muted);">P/E RATIO</div>
-          </div>
-        </div>
-
-        <!-- Score breakdown grid -->
-        <div class="section-label" style="margin-bottom:10px;">100-POINT SCORE BREAKDOWN</div>
-        <div class="grid grid-3" style="margin-bottom:16px;" id="parsed-scores-grid"></div>
-
-        <!-- Editable fields -->
-        <div class="form-row" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label>Total Score (edit if needed)</label>
-            <input id="imp-score" type="number" min="0" max="100">
-          </div>
-          <div class="form-group">
-            <label>P/E Ratio</label>
-            <input id="imp-pe" type="number" step="0.1">
-          </div>
-          <div class="form-group">
-            <label>Downturn Resistance</label>
-            <select id="imp-dr">
-              <option value="">Unknown</option>
-              <option value="YES">YES</option>
-              <option value="NEUTRAL">NEUTRAL</option>
-              <option value="NO">NO</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label>Ticker</label>
-            <input id="imp-ticker" placeholder="e.g. 6532">
-          </div>
-          <div class="form-group">
-            <label>Company Name</label>
-            <input id="imp-name" placeholder="e.g. BayCurrent">
-          </div>
-          <div class="form-group">
-            <label>Country</label>
-            <input id="imp-country" placeholder="e.g. Japan">
-          </div>
-          <div class="form-group">
-            <label>Sector</label>
-            <input id="imp-sector" placeholder="e.g. Consulting">
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:10px;">
-          <label>Short Thesis</label>
-          <textarea id="imp-thesis" rows="3"></textarea>
-        </div>
-        <div class="form-group" style="margin-bottom:10px;">
-          <label>Post-Earnings Checklist (one item per line)</label>
-          <textarea id="imp-watch" rows="4"></textarea>
-        </div>
-        <div class="form-group" style="margin-bottom:10px;">
-          <label>Break Thesis If</label>
-          <textarea id="imp-reason" rows="3"></textarea>
-        </div>
-        <div class="form-group" style="margin-bottom:16px;">
-          <label>Revisit Trigger / Notes</label>
-          <input id="imp-trigger">
-        </div>
-      </div>
-
-      <!-- DECISION -->
-      <div class="card">
-        <div class="card-title">Decision</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-          <button class="btn" style="padding:16px;flex-direction:column;gap:6px;height:auto;border-color:var(--red);color:var(--red);background:var(--red-bg);" onclick="decideReview('reject')">
-            <span style="font-size:20px;">✕</span>
-            <span style="font-weight:700;font-size:13px;">Reject</span>
-            <span style="font-size:11px;color:var(--muted);font-weight:400;">Remove from consideration</span>
-          </button>
-          <button class="btn" style="padding:16px;flex-direction:column;gap:6px;height:auto;border-color:var(--gold);color:var(--gold);background:var(--gold-bg);" onclick="decideReview('watchlist')">
-            <span style="font-size:20px;">◎</span>
-            <span style="font-weight:700;font-size:13px;">Add to Watchlist</span>
-            <span style="font-size:11px;color:var(--muted);font-weight:400;">Monitor — not ready yet</span>
-          </button>
-          <button class="btn" style="padding:16px;flex-direction:column;gap:6px;height:auto;border-color:var(--accent);color:var(--accent);background:var(--accent-bg);" onclick="decideReview('candidates')">
-            <span style="font-size:20px;">✦</span>
-            <span style="font-weight:700;font-size:13px;">Add to Candidates</span>
-            <span style="font-size:11px;color:var(--muted);font-weight:400;">Move to main list</span>
-          </button>
-        </div>
-        <!-- Replace candidate option -->
-        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
-          <label style="margin-bottom:6px;">If replacing a current candidate:</label>
-          <select id="imp-replaces">
-            <option value="">— Not replacing anyone —</option>
-          </select>
-        </div>
-      </div>
-    </div>
+    <div id="reviews-container"></div>
   </div>
 
 </main>
@@ -1300,7 +1161,7 @@ label {
 /* ============================================================
    DATA LAYER — localStorage persistence
    ============================================================ */
-const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow' };
+const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews' };
 
 // Self-heal: if stored data is from an old/broken session, wipe and reseed
 (function healStorage() {
@@ -1419,6 +1280,26 @@ function seedData() {
       notes:'Strategy Engine / Hedge. Not scored by normal framework. Target after correction: 20%. Pre-correction: 80%.' }
   ];
   save('stocks', stocks);
+  // Seed pending reviews from Claude
+  if (load('reviews').length === 0) {
+    const reviews = [
+      { id: uid(), ticker:'6532', name:'BayCurrent', country:'Japan',
+        sector:'IT Consulting / Digital Transformation',
+        price:4839, pe:20.37, eps:249.16, market_cap:'¥770B',
+        score:81, moat:10, predictability:10, growth_durability:11,
+        revenue_quality:7, balance_sheet:9, growth_strength:8,
+        reinvestment_runway:7, management:6, capital_allocation:5,
+        roce:5, capex_intensity:3, dr:'NEUTRAL',
+        thesis:'Japan\'s leading IT execution consultancy riding the structural digitalization and AI transformation wave in Japanese enterprise. Embeds consultants directly in client operations — stickiness closer to software than traditional consulting. Asset-light, high-margin, rapidly growing. One-pool staffing model drives industry-leading utilization. Japan digital transformation runway still early-innings.',
+        watch:'Revenue growth still ≥20%? (core thesis driver)\nEBITDA margin holding 33-37%?\nConsultant headcount growing 10-15%+?\nGross margin stable or improving? (was 55.8% Q3 FY2026)\nFY2027 guidance on track? (¥190B revenue, ¥48.1B profit)\nAI consulting demand commentary still strong?\nNo signs of project cancellations or delays?\n\nDecision:\nADD (all strong + P/E ≤25×)\nHOLD (thesis intact)\nTRIM (P/E above 30× or growth <15%)\nSELL (growth drops below 10% sustainably)',
+        break_thesis:'Revenue growth decelerates below 15% sustainably\nEBITDA margin falls below 30% without clear reason\nConsultant attrition rises sharply or hiring slows\nLarge clients cut digital transformation budgets\nCompetitors take meaningful share\nJapan enterprise capex cycle reverses materially',
+        notes:'FY2026 full year: revenue ¥148.3B (+27% YoY), net income ¥37.8B, EPS ¥249.16. FY2027 guided: ¥190B revenue (+28%), ¥48.1B profit. T1 entry: ¥4,000-4,500 (P/E ~16-18×). T2: ¥3,200-3,800. Could replace KSPI (score 78, higher country risk) if valuation compresses.',
+        t1:'4000-4500', t2:'3200-3800',
+        latest_earnings:'FY2026 (Feb 28, 2026): Revenue ¥148.3B +27% YoY, Net Income ¥37.8B +22.8% YoY, EPS ¥249.16. EBITDA margin 33.9%. Gross margin 55.8%. FY2027 guided at ¥190B revenue (+28%) and ¥48.1B profit. Dividend raised to ¥65/share.',
+        reviewed_by:'Claude', reviewed_date:'2026-05-01', status:'pending' }
+    ];
+    save('reviews', reviews);
+  }
 
   const pipeline = [
     { id: uid(), ticker:'NEMETSCHEK', name:'Nemetschek SE', stage:'watchlist', score:87, pe:34.0, dr:'NEUTRAL',
@@ -2377,7 +2258,238 @@ function showToast(msg) {
    ============================================================ */
 
 function renderReview() {
-  // nothing to auto-render, form is static
+  const reviews = load('reviews');
+  const container = document.getElementById('reviews-container');
+  if (!reviews || reviews.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="icon">◎</div>
+      <div class="label">No reviews yet</div>
+      <div class="hint">Ask Claude to "Check: [company, ticker]" and the review will appear here automatically</div>
+    </div>`;
+    return;
+  }
+  const pending = reviews.filter(r => r.status === 'pending');
+  const decided = reviews.filter(r => r.status !== 'pending');
+  const WEIGHTS = {moat:14,predictability:14,growth_durability:12,revenue_quality:12,balance_sheet:10,growth_strength:8,reinvestment_runway:8,management:7,capital_allocation:6,roce:6,capex_intensity:3};
+  const LABELS = {moat:'Moat Strength',predictability:'Predictability',growth_durability:'Growth Durability',revenue_quality:'Revenue Quality',balance_sheet:'Balance Sheet',growth_strength:'Growth Strength',reinvestment_runway:'Reinvestment Runway',management:'Management',capital_allocation:'Capital Allocation',roce:'ROCE',capex_intensity:'Capex Intensity'};
+
+  function renderReviewCard(r, isPending) {
+    const scoreColor = r.score >= 84 ? 'var(--accent)' : r.score >= 78 ? 'var(--gold)' : 'var(--red)';
+    const ratingRows = Object.keys(WEIGHTS).map(k => {
+      const val = r[k] || 0;
+      const max = WEIGHTS[k];
+      const pct = Math.round((val/max)*100);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="flex:1;font-size:11px;color:var(--muted2);">${LABELS[k]}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);">/${max}</span>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:${scoreColor};width:24px;text-align:right;">${val}</span>
+        <div style="width:80px;height:3px;background:var(--surface3);border-radius:2px;">
+          <div style="height:3px;width:${pct}%;background:${scoreColor};border-radius:2px;"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const watchLines = (r.watch||'').split('\n').map(line => line.trim() ?
+      (line.startsWith('Decision') || line.startsWith('ADD') || line.startsWith('HOLD') || line.startsWith('TRIM') || line.startsWith('SELL') ?
+        `<div style="font-size:11px;color:var(--accent);font-family:var(--font-mono);font-weight:600;margin-top:6px;">${line}</div>` :
+        `<div style="display:flex;gap:8px;padding:3px 0;font-size:12px;color:var(--muted2);"><span style="color:var(--accent);">›</span><span>${line}</span></div>`)
+      : '').join('');
+
+    const breakLines = (r.break_thesis||'').split('\n').map(line => line.trim() ?
+      `<div style="display:flex;gap:8px;padding:3px 0;font-size:12px;color:var(--muted2);"><span style="color:var(--red);flex-shrink:0;">⚠</span><span>${line}</span></div>` : '').join('');
+
+    const decisionBtns = isPending ? `
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div class="section-label" style="margin-bottom:12px;">YOUR DECISION</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+          <button class="btn" style="padding:14px;flex-direction:column;gap:5px;height:auto;border-color:var(--red);color:var(--red);background:var(--red-bg);" onclick="decideReviewCard('${r.id}','reject')">
+            <span style="font-size:18px;">✕</span><span style="font-weight:700;font-size:12px;">Reject</span>
+          </button>
+          <button class="btn" style="padding:14px;flex-direction:column;gap:5px;height:auto;border-color:var(--gold);color:var(--gold);background:var(--gold-bg);" onclick="decideReviewCard('${r.id}','watchlist')">
+            <span style="font-size:18px;">◎</span><span style="font-weight:700;font-size:12px;">Watchlist</span>
+          </button>
+          <button class="btn" style="padding:14px;flex-direction:column;gap:5px;height:auto;border-color:var(--accent);color:var(--accent);background:var(--accent-bg);" onclick="decideReviewCard('${r.id}','candidates')">
+            <span style="font-size:18px;">✦</span><span style="font-weight:700;font-size:12px;">Add to Candidates</span>
+          </button>
+        </div>
+        <div>
+          <label style="margin-bottom:5px;">If replacing a current candidate:</label>
+          <select id="replace-sel-${r.id}" style="font-size:12px;">
+            <option value="">— Not replacing anyone —</option>
+            ${load('stocks').filter(s=>s.status==='active').map(s=>`<option value="${s.id}">${s.name} (${s.ticker}) — Score ${s.score||'?'}</option>`).join('')}
+          </select>
+        </div>
+      </div>` : `<div style="margin-top:16px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--muted2);">Decision made on ${r.decided_date||'—'}</span>
+        <span class="badge ${r.status==='watchlist'?'badge-watchlist':r.status==='candidates'?'badge-active':'badge-rejected'}">${r.status.toUpperCase()}</span>
+      </div>`;
+
+    return `<div class="card" style="margin-bottom:20px;">
+      <!-- HEADER -->
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="width:72px;height:72px;border-radius:50%;border:2px solid ${scoreColor};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;background:rgba(26,122,69,0.06);">
+          <div style="font-size:22px;font-weight:800;color:${scoreColor};line-height:1;">${r.score}</div>
+          <div style="font-size:8px;color:var(--muted);font-family:var(--font-mono);">/ 100</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:5px;">${r.name} <span style="font-family:var(--font-mono);font-size:13px;color:var(--accent);">${r.ticker}</span></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
+            ${drBadge(r.dr)}
+            <span class="badge badge-pipeline">${r.country||''}</span>
+            <span class="badge badge-compounder">${r.sector||''}</span>
+            ${isPending?'<span class="badge badge-watchlist">PENDING DECISION</span>':''}
+          </div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">Reviewed by Claude · ${r.reviewed_date||''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text2);">${r.pe?r.pe.toFixed(1)+'×':'—'}</div>
+          <div style="font-size:10px;color:var(--muted);">P/E RATIO</div>
+          <div style="font-family:var(--font-mono);font-size:14px;color:var(--muted2);margin-top:4px;">${r.price?r.price.toLocaleString():'—'}</div>
+          <div style="font-size:10px;color:var(--muted);">PRICE</div>
+        </div>
+      </div>
+
+      <!-- LATEST EARNINGS BANNER -->
+      ${r.latest_earnings ? `<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--muted2);line-height:1.6;">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);font-family:var(--font-mono);margin-bottom:4px;">LATEST EARNINGS</div>
+        ${r.latest_earnings}
+      </div>` : ''}
+
+      <div class="grid grid-12" style="gap:16px;">
+        <!-- LEFT: SCORE BREAKDOWN -->
+        <div class="span-4">
+          <div class="section-label" style="margin-bottom:8px;">100-POINT BREAKDOWN</div>
+          ${ratingRows}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;margin-top:4px;">
+            <span style="font-size:11px;font-weight:700;color:var(--text2);">TOTAL</span>
+            <span style="font-family:var(--font-mono);font-size:20px;font-weight:800;color:${scoreColor};">${r.score}<span style="font-size:12px;color:var(--muted);">/100</span></span>
+          </div>
+        </div>
+
+        <!-- RIGHT: THESIS + CHECKLIST + BREAK -->
+        <div class="span-8">
+          <div class="section-label" style="margin-bottom:6px;">SHORT THESIS</div>
+          <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:14px;">${r.thesis||'—'}</p>
+
+          <div class="section-label" style="margin-bottom:6px;">POST-EARNINGS CHECKLIST</div>
+          <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;border:1px solid var(--border);">
+            ${watchLines}
+          </div>
+
+          <div class="section-label" style="margin-bottom:6px;">BREAK THESIS IF</div>
+          <div style="background:var(--red-bg);border:1px solid rgba(192,57,43,0.15);border-left:3px solid var(--red);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;">
+            ${breakLines}
+          </div>
+
+          ${r.notes ? `<div class="section-label" style="margin-bottom:6px;">NOTES & ENTRY ZONES</div>
+          <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--muted2);line-height:1.6;border:1px solid var(--border);">
+            ${r.notes}
+          </div>` : ''}
+        </div>
+      </div>
+
+      ${decisionBtns}
+    </div>`;
+  }
+
+  let html = '';
+  if (pending.length > 0) {
+    html += `<div class="section-label" style="margin-bottom:12px;">AWAITING YOUR DECISION (${pending.length})</div>`;
+    html += pending.map(r => renderReviewCard(r, true)).join('');
+  }
+  if (decided.length > 0) {
+    html += `<div class="section-label" style="margin-top:20px;margin-bottom:12px;">PREVIOUS REVIEWS (${decided.length})</div>`;
+    html += decided.map(r => renderReviewCard(r, false)).join('');
+  }
+  container.innerHTML = html;
+}
+
+function decideReviewCard(id, decision) {
+  const reviews = load('reviews');
+  const review = reviews.find(r => r.id === id);
+  if (!review) return;
+
+  if (decision === 'reject') {
+    review.status = 'rejected';
+    review.decided_date = today();
+    save('reviews', reviews);
+    showToast(review.name + ' rejected');
+    renderReview();
+    return;
+  }
+
+  if (decision === 'watchlist') {
+    review.status = 'watchlist';
+    review.decided_date = today();
+    save('reviews', reviews);
+    // Add to pipeline/watchlist
+    const pipeline = load('pipeline');
+    pipeline.push({
+      id: uid(), ticker: review.ticker, name: review.name,
+      stage: 'watchlist', score: review.score, pe: review.pe, dr: review.dr,
+      country: review.country, sector: review.sector,
+      reason: review.thesis, trigger: review.notes,
+      thesis: review.thesis, watch: review.watch,
+      reviewed: today(), ratings: {}
+    });
+    save('pipeline', pipeline);
+    updateBadges();
+    showToast(review.name + ' added to Watchlist');
+    renderReview();
+    return;
+  }
+
+  if (decision === 'candidates') {
+    review.status = 'candidates';
+    review.decided_date = today();
+    save('reviews', reviews);
+
+    const replaceId = document.getElementById('replace-sel-' + id)?.value;
+    const stocks = load('stocks');
+
+    if (replaceId) {
+      const old = stocks.find(s => s.id === replaceId);
+      if (old) {
+        old.status = 'watchlist';
+        const pipeline = load('pipeline');
+        pipeline.push({
+          id: uid(), ticker: old.ticker, name: old.name,
+          stage: 'watchlist', score: old.score, pe: old.pe, dr: old.dr,
+          reason: 'Replaced by ' + review.name + ' in Candidates list.',
+          trigger: 'Re-evaluate if ' + review.name + ' thesis breaks.',
+          reviewed: today(),
+        });
+        save('pipeline', pipeline);
+      }
+    }
+
+    const WEIGHTS = {moat:14,predictability:14,growth_durability:12,revenue_quality:12,balance_sheet:10,growth_strength:8,reinvestment_runway:8,management:7,capital_allocation:6,roce:6,capex_intensity:3};
+    const ratingFields = {};
+    Object.keys(WEIGHTS).forEach(k => { ratingFields[k] = review[k] || 0; });
+
+    stocks.push({
+      id: uid(), ticker: review.ticker, name: review.name,
+      country: review.country, sector: review.sector,
+      type: 'compounder', status: 'active',
+      price: review.price || 0, pe: review.pe || 0, eps: review.eps || 0, fcf: 0,
+      score: review.score, ...ratingFields, dr: review.dr,
+      target_alloc: 0, starter_alloc: 0,
+      t1: review.t1 || '', t2: review.t2 || '',
+      conviction: 'medium', price_status: 'waiting',
+      thesis: review.thesis, watch: review.watch,
+      break_thesis: review.break_thesis, notes: review.notes,
+    });
+    save('stocks', stocks);
+
+    // Remove from watchlist if present
+    const pl = load('pipeline').filter(p => p.ticker !== review.ticker);
+    save('pipeline', pl);
+
+    updateBadges();
+    showToast(review.name + ' added to Candidates' + (replaceId ? ' (replaced previous)' : ''));
+    renderReview();
+    renderDashboard();
+  }
 }
 
 function generateReviewPrompt() {
@@ -2477,260 +2589,9 @@ function copyPrompt() {
   });
 }
 
-function parseAndPreview() {
-  const raw = document.getElementById('import-response').value.trim();
-  if (!raw) { showToast('Paste Claude response first'); return; }
 
-  // Extract company name — look for patterns like "**CompanyName**" or "Company: X" or "# CompanyName"
-  let companyName = '';
-  const namePatterns = [
-    /^#\s+(.+?)(?:\s*\(|$)/m,
-    /\*\*([A-Z][^\*]{2,40})\*\*/,
-    /Company[^:]*:\s*([^\n]{3,50})/i,
-    /^([A-Z][A-Za-z\s]{3,40})\n[-=]{3,}/m,
-  ];
-  for (const p of namePatterns) {
-    const m = raw.match(p);
-    if (m && m[1] && m[1].trim().length > 2) { companyName = m[1].trim(); break; }
-  }
 
-  // Extract ticker
-  let ticker = '';
-  const tickerMatch = raw.match(/[Tt]icker[^:]*:\s*([A-Z0-9]{2,8})/m) || raw.match(/\(([A-Z0-9]{2,8})\)/) || raw.match(/\b([0-9]{4})\b/);
-  if (tickerMatch) ticker = (tickerMatch[1]||tickerMatch[2]||tickerMatch[3]||'').trim();
 
-  // Extract country
-  let country = '';
-  const countryMatch = raw.match(/Country[^:]*:[\s]*([^\n]{2,30})/i);
-  if (countryMatch) country = (countryMatch[1]||countryMatch[2]||'').trim();
-
-  // Extract sector
-  let sector = '';
-  const sectorMatch = raw.match(/Sector[^:]*:[\s]*([^\n]{3,40})/i) || raw.match(/Industry[^:]*:[\s]*([^\n]{3,40})/i);
-  if (sectorMatch) sector = (sectorMatch[1]||sectorMatch[2]||'').trim();
-
-  // Extract P/E
-  let pe = 0;
-  const peMatch = raw.match(/P[/\\]E[^0-9]*([0-9]+\.?[0-9]*)/i);
-  if (peMatch) pe = parseFloat(peMatch[1]);
-
-  // Extract total score
-  let score = 0;
-  const sm1 = raw.match(/TOTAL[^\n]*?([6-9][0-9]|100)(?:\/100)?/i);
-  const sm2 = raw.match(/([6-9][0-9]|100)\s*\/\s*100/);
-  if (sm1) score = parseInt(sm1[1]);
-  else if (sm2) score = parseInt(sm2[1]);
-
-  // Extract individual ratings
-  const ratingPatterns = [
-    { key:'moat',              label:'Moat Strength',        regex:/Moat[^\n]*?([0-9]+)\s*\/\s*14/i },
-    { key:'predictability',    label:'Predictability',       regex:/Predictability[^\n]*?([0-9]+)\s*\/\s*14/i },
-    { key:'growth_durability', label:'Growth Durability',    regex:/Growth Durability[^\n]*?([0-9]+)\s*\/\s*12/i },
-    { key:'revenue_quality',   label:'Revenue Quality',      regex:/Revenue Quality[^\n]*?([0-9]+)\s*\/\s*12/i },
-    { key:'balance_sheet',     label:'Balance Sheet',        regex:/Balance Sheet[^\n]*?([0-9]+)\s*\/\s*10/i },
-    { key:'growth_strength',   label:'Growth Strength',      regex:/Growth Strength[^\n]*?([0-9]+)\s*\/\s*8/i },
-    { key:'reinvestment_runway', label:'Reinvestment Runway',regex:/Reinvestment[^\n]*?([0-9]+)\s*\/\s*8/i },
-    { key:'management',        label:'Management',           regex:/Management[^\n]*?([0-9]+)\s*\/\s*7/i },
-    { key:'capital_allocation', label:'Capital Allocation',  regex:/Capital Allocation[^\n]*?([0-9]+)\s*\/\s*6/i },
-    { key:'roce',              label:'ROCE',                 regex:/ROCE[^\n]*?([0-9]+)\s*\/\s*6/i },
-    { key:'capex_intensity',   label:'Capex Intensity',      regex:/Capex[^\n]*?([0-9]+)\s*\/\s*3/i },
-  ];
-  const extractedRatings = {};
-  ratingPatterns.forEach(p => {
-    const m = raw.match(p.regex);
-    extractedRatings[p.key] = m ? parseInt(m[1]) : 0;
-  });
-
-  // Extract DR
-  const drMatch = raw.match(/DOWNTURN RESISTANCE[^\n]*(YES|NEUTRAL|NO)/i);
-  const dr = drMatch ? drMatch[1].toUpperCase() : '';
-
-  // Extract thesis
-  let thesis = '';
-  const thIdx = raw.search(/SHORT THESIS|## Thesis|INVESTMENT THESIS/i);
-  if (thIdx > -1) {
-    const thSlice = raw.slice(thIdx, thIdx + 500).replace(/SHORT THESIS|## Thesis|INVESTMENT THESIS/i,'').trim();
-    thesis = thSlice.split('\n\n')[0].replace(/^[:—\-\s#]+/, '').slice(0, 400).trim();
-  }
-
-  // Extract watch / checklist
-  let watch = '';
-  const wIdx = raw.search(/POST.EARNINGS|WHAT TO WATCH|CHECKLIST|KEY KPIs/i);
-  if (wIdx > -1) {
-    const wSlice = raw.slice(wIdx, wIdx + 600).replace(/POST.EARNINGS CHECKLIST|WHAT TO WATCH|CHECKLIST|KEY KPIs/i,'').trim();
-    watch = wSlice.split(/\n\n/)[0].replace(/^[:—\-\s#]+/, '').slice(0, 500).trim();
-  }
-
-  // Extract break thesis
-  let risks = '';
-  const rkIdx = raw.search(/BREAK THESIS|KEY RISKS/i);
-  if (rkIdx > -1) {
-    const rkSlice = raw.slice(rkIdx, rkIdx + 500);
-    risks = rkSlice.replace(/BREAK THESIS IF|BREAK THESIS|KEY RISKS/i,'').replace(/^[:—\-\s#]+/,'').split('\n\n')[0].slice(0,400).trim();
-  }
-
-  // Extract revisit trigger
-  let trigger = '';
-  const trIdx = raw.search(/REVISIT TRIGGER|WATCHLIST CONDITION/i);
-  if (trIdx > -1) {
-    trigger = raw.slice(trIdx, trIdx+250).replace(/REVISIT TRIGGER|WATCHLIST CONDITION/i,'').replace(/^[:—\-\s]+/,'').split('\n\n')[0].slice(0,200).trim();
-  }
-
-  // Populate fields
-  document.getElementById('imp-score').value = score || '';
-  document.getElementById('imp-pe').value = pe || '';
-  document.getElementById('imp-ticker').value = ticker;
-  document.getElementById('imp-name').value = companyName;
-  document.getElementById('imp-country').value = country;
-  document.getElementById('imp-sector').value = sector;
-  if (dr) document.getElementById('imp-dr').value = dr;
-  document.getElementById('imp-thesis').value = thesis;
-  document.getElementById('imp-watch').value = watch;
-  document.getElementById('imp-reason').value = risks;
-  document.getElementById('imp-trigger').value = trigger;
-
-  // Update preview header
-  document.getElementById('preview-score-num').textContent = score || '—';
-  document.getElementById('preview-company-name').textContent = companyName || 'Unknown Company';
-  document.getElementById('preview-pe').textContent = pe ? pe.toFixed(1)+'×' : '—';
-  document.getElementById('preview-badges').innerHTML =
-    (ticker ? `<span class="badge badge-pipeline">${ticker}</span>` : '') +
-    (dr ? drBadge(dr) : '') +
-    (country ? `<span class="badge badge-watchlist">${country}</span>` : '');
-
-  // Score breakdown grid
-  const grid = document.getElementById('parsed-scores-grid');
-  const WEIGHTS = {moat:14,predictability:14,growth_durability:12,revenue_quality:12,balance_sheet:10,growth_strength:8,reinvestment_runway:8,management:7,capital_allocation:6,roce:6,capex_intensity:3};
-  grid.innerHTML = ratingPatterns.map(p => {
-    const val = extractedRatings[p.key] || 0;
-    const max = WEIGHTS[p.key] || 14;
-    const pct = Math.round((val/max)*100);
-    return '<div class="val-item" style="text-align:left;padding:10px 12px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">' +
-      '<span style="font-size:10px;color:var(--muted2);font-weight:600;">' + p.label + '</span>' +
-      '<span style="font-family:var(--font-mono);font-size:13px;color:var(--accent);font-weight:700;">' + val + '<span style="color:var(--muted);font-size:10px;">/' + max + '</span></span>' +
-      '</div>' +
-      '<div style="height:4px;background:var(--surface3);border-radius:2px;">' +
-      '<div style="height:4px;width:' + pct + '%;background:var(--accent);border-radius:2px;"></div>' +
-      '</div></div>';
-  }).join('');
-
-  window._parsedRatings = extractedRatings;
-
-  // Populate replace dropdown
-  const stocks = load('stocks').filter(s=>s.status==='active');
-  const sel = document.getElementById('imp-replaces');
-  sel.innerHTML = '<option value="">— Not replacing anyone —</option>' +
-    stocks.map(s=>`<option value="${s.id}">${s.name} (${s.ticker}) — Score ${s.score||'?'}</option>`).join('');
-
-  document.getElementById('parsed-preview').style.display = 'block';
-  document.getElementById('parsed-preview').scrollIntoView({ behavior:'smooth', block:'start' });
-  showToast('Parsed — review and decide');
-}
-
-function decideReview(decision) {
-  const ticker  = document.getElementById('imp-ticker').value.trim().toUpperCase() || '?';
-  const name    = document.getElementById('imp-name').value.trim() || 'Unknown';
-  const score   = parseInt(document.getElementById('imp-score').value) || 0;
-  const pe      = parseFloat(document.getElementById('imp-pe').value) || 0;
-  const dr      = document.getElementById('imp-dr').value;
-  const country = document.getElementById('imp-country').value.trim();
-  const sector  = document.getElementById('imp-sector').value.trim();
-  const thesis  = document.getElementById('imp-thesis').value.trim();
-  const watch   = document.getElementById('imp-watch').value.trim();
-  const reason  = document.getElementById('imp-reason').value.trim();
-  const trigger = document.getElementById('imp-trigger').value.trim();
-  const replaces= document.getElementById('imp-replaces').value;
-  const ratings = window._parsedRatings || {};
-
-  if (decision === 'reject') {
-    showToast(name + ' rejected — not added anywhere');
-    clearReviewForm();
-    return;
-  }
-
-  if (decision === 'watchlist') {
-    const pipeline = load('pipeline');
-    pipeline.push({
-      id: uid(), ticker, name, stage: 'watchlist',
-      score, pe, dr, country, sector,
-      reason: reason || thesis,
-      trigger, thesis, watch,
-      reviewed: today(),
-      ratings,
-    });
-    save('pipeline', pipeline);
-    updateBadges();
-    showToast(name + ' added to Watchlist');
-    clearReviewForm();
-    showPage('pipeline');
-    return;
-  }
-
-  if (decision === 'candidates') {
-    const stocks = load('stocks');
-
-    // If replacing, move old stock to watchlist
-    if (replaces) {
-      const old = stocks.find(s=>s.id===replaces);
-      if (old) {
-        old.status = 'watchlist';
-        const pipeline = load('pipeline');
-        pipeline.push({
-          id: uid(), ticker: old.ticker, name: old.name,
-          stage: 'watchlist', score: old.score, pe: old.pe, dr: old.dr,
-          reason: 'Replaced by ' + name + ' in Candidates list.',
-          trigger: 'Re-evaluate if ' + name + ' thesis breaks.',
-          reviewed: today(),
-        });
-        save('pipeline', pipeline);
-      }
-    }
-
-    // Add new stock as active candidate
-    const newStock = {
-      id: uid(), ticker, name, country, sector,
-      type: 'compounder', status: 'active',
-      price: 0, pe, eps: 0, fcf: 0,
-      score, ...ratings, dr,
-      target_alloc: 0, starter_alloc: 0,
-      t1: '', t2: '', conviction: 'medium',
-      price_status: 'waiting',
-      thesis, watch,
-      break_thesis: reason, notes: trigger,
-    };
-    stocks.push(newStock);
-    save('stocks', stocks);
-
-    // Remove from watchlist if it was there
-    const pipeline = load('pipeline').filter(p=>p.ticker!==ticker);
-    save('pipeline', pipeline);
-
-    updateBadges();
-    showToast(name + ' added to Candidates' + (replaces ? ' (replaced previous)' : ''));
-    clearReviewForm();
-    showPage('compounders');
-  }
-}
-
-function closeReviewAndGo(page) {
-  showPage(page);
-}
-
-function clearReviewForm() {
-  ['import-response','imp-thesis','imp-watch','imp-reason','imp-trigger',
-   'imp-ticker','imp-name','imp-country','imp-sector'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  ['imp-score','imp-pe'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('parsed-preview').style.display = 'none';
-  window._parsedRatings = {};
-  showToast('Form cleared');
-}
 
 
 /* ============================================================
