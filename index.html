@@ -2257,6 +2257,55 @@ function showToast(msg) {
    REVIEW BUSINESS PAGE
    ============================================================ */
 
+function formatEarningsMetrics(raw) {
+  // Parse key metrics from the earnings string and render as highlight tiles
+  const metrics = [];
+
+  // Revenue growth
+  const revGrowth = raw.match(/(?:Revenue[^+]*?|sales[^+]*?)\+([0-9]+\.?[0-9]*)%\s*YoY/i);
+  if (revGrowth) metrics.push({ label:'Revenue Growth', value:'+'+revGrowth[1]+'%', color:'var(--accent)', sub:'YoY' });
+
+  // Net income / profit growth
+  const niGrowth = raw.match(/(?:Net Income|Profit|Earnings)[^+]*?\+([0-9]+\.?[0-9]*)%\s*YoY/i);
+  if (niGrowth) metrics.push({ label:'Net Income Growth', value:'+'+niGrowth[1]+'%', color:'var(--accent)', sub:'YoY' });
+
+  // EPS
+  const eps = raw.match(/EPS\s+[¥$€]?([0-9,]+\.?[0-9]*)/i);
+  if (eps) metrics.push({ label:'EPS (TTM)', value:(raw.includes('¥')?'¥':'')+eps[1], color:'var(--text2)', sub:'per share' });
+
+  // EBITDA margin
+  const ebitda = raw.match(/EBITDA margin\s+([0-9]+\.?[0-9]*)%/i);
+  if (ebitda) metrics.push({ label:'EBITDA Margin', value:ebitda[1]+'%', color:'var(--text2)', sub:'current' });
+
+  // Gross margin
+  const gross = raw.match(/Gross margin\s+([0-9]+\.?[0-9]*)%/i);
+  if (gross) metrics.push({ label:'Gross Margin', value:gross[1]+'%', color:'var(--text2)', sub:'current' });
+
+  // Revenue guidance
+  const revGuide = raw.match(/guided[^¥]*[¥$€]([0-9]+\.?[0-9]*[BM])\s+revenue/i);
+  if (revGuide) metrics.push({ label:'FY Guidance Rev', value:(raw.includes('¥')?'¥':'')+revGuide[1], color:'var(--blue)', sub:'next year' });
+
+  // Profit guidance
+  const profGuide = raw.match(/[¥$€]([0-9]+\.?[0-9]*[BM])\s+profit/i);
+  if (profGuide) metrics.push({ label:'FY Guidance Profit', value:(raw.includes('¥')?'¥':'')+profGuide[1], color:'var(--blue)', sub:'next year' });
+
+  // Dividend
+  const div = raw.match(/Dividend[^¥$€]*[¥$€]([0-9]+)/i);
+  if (div) metrics.push({ label:'Dividend', value:(raw.includes('¥')?'¥':'€')+div[1], color:'var(--purple)', sub:'per share' });
+
+  if (metrics.length === 0) {
+    // Fallback: just show the raw text nicely
+    return `<div style="font-size:12px;color:var(--muted2);line-height:1.7;grid-column:1/-1;">${raw}</div>`;
+  }
+
+  return metrics.map(m => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;">
+      <div style="font-size:10px;color:var(--muted);font-family:var(--font-mono);margin-bottom:4px;letter-spacing:0.03em;">${m.label}</div>
+      <div style="font-family:var(--font-mono);font-size:17px;font-weight:700;color:${m.color};line-height:1.1;">${m.value}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px;">${m.sub}</div>
+    </div>`).join('');
+}
+
 function renderReview() {
   const reviews = load('reviews');
   const container = document.getElementById('reviews-container');
@@ -2350,9 +2399,11 @@ function renderReview() {
       </div>
 
       <!-- LATEST EARNINGS BANNER -->
-      ${r.latest_earnings ? `<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--muted2);line-height:1.6;">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);font-family:var(--font-mono);margin-bottom:4px;">LATEST EARNINGS</div>
-        ${r.latest_earnings}
+      ${r.latest_earnings ? `<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);font-family:var(--font-mono);margin-bottom:12px;letter-spacing:0.08em;">LATEST EARNINGS</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
+          ${formatEarningsMetrics(r.latest_earnings)}
+        </div>
       </div>` : ''}
 
       <div class="grid grid-12" style="gap:16px;">
