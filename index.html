@@ -1624,7 +1624,7 @@ function renderBubble() {
     x:pts.map(s=>s.score), y:pts.map(s=>s.pe),
     text:pts.map(s=>s.ticker),
     textposition:'top center',
-    textfont:{ size:10, color:'rgba(232,234,240,0.8)' },
+    textfont:{ size:11, color:'#0f2318', family:'Plus Jakarta Sans' },
     marker:{ size:13, color:statusColors[status]||'#6b8c76', opacity:0.9, line:{color:'#ffffff',width:2} },
     customdata:pts.map(s=>[s.name,s.pe,s.dr]),
     hovertemplate:'<b>%{customdata[0]}</b><br>Score: %{x}<br>P/E: %{customdata[1]}×<br>DR: %{customdata[2]}<extra></extra>'
