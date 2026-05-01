@@ -653,7 +653,7 @@ label {
       <span class="icon">⇔</span> Compare
     </div>
     <div class="nav-item" data-page="pipeline" onclick="showPage('pipeline')">
-      <span class="icon">⌥</span> Pipeline <span class="badge" id="badge-pipeline">0</span>
+      <span class="icon">⌥</span> Watchlist <span class="badge" id="badge-pipeline">0</span>
     </div>
     <div class="nav-item" data-page="earnings" onclick="showPage('earnings')">
       <span class="icon">◷</span> Earnings
@@ -854,11 +854,11 @@ label {
   <div class="page" id="page-pipeline">
     <div class="page-header">
       <div>
-        <div class="page-title">Pipeline</div>
-        <div class="page-subtitle">CANDIDATES NOT YET ON MAIN LIST</div>
+        <div class="page-title">Watchlist</div>
+        <div class="page-subtitle">CANDIDATES UNDER MONITORING — NOT YET ON MAIN LIST</div>
       </div>
       <div class="header-actions">
-        <button class="btn btn-accent btn-sm" onclick="openAddPipeline()">+ Add Candidate</button>
+        <button class="btn btn-accent btn-sm" onclick="openAddPipeline()">+ Add to Watchlist</button>
       </div>
     </div>
     <div class="grid grid-12" style="margin-bottom:16px;" id="pipeline-kpis"></div>
@@ -909,172 +909,152 @@ label {
     <div class="page-header">
       <div>
         <div class="page-title">Review a Business</div>
-        <div class="page-subtitle">BUILD A BRIEF → SCORE WITH CLAUDE → IMPORT TO PIPELINE</div>
+        <div class="page-subtitle">ASK CLAUDE → GET FULL ANALYSIS → DECIDE</div>
       </div>
     </div>
 
-    <!-- STEP 1: BUSINESS BRIEF -->
-    <div class="grid grid-12" style="margin-bottom:16px;">
-      <div class="card span-12">
+    <!-- STEP 1: PROMPT -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">1</div>
+        <div class="card-title-lg" style="margin-bottom:0;">Ask Claude to Research a Business</div>
+      </div>
+      <div class="notice notice-info" style="margin-bottom:14px;">
+        <span class="notice-icon">◎</span>
+        <span>Type a company name or ticker in this conversation — e.g. <strong>"Check 6532 Bay Current"</strong> or <strong>"Research Nemetschek NEM.DE"</strong>. Claude will fetch latest data, score it against your 100-point framework, compare to your holdings, and return a structured review. Paste the result below.</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:4px;">
+        <span style="font-size:18px;">◎</span>
+        <span style="font-size:13px;color:var(--muted2);">Go to your <strong>Claude.ai</strong> tab and type: <span style="font-family:var(--font-mono);background:var(--surface3);padding:2px 8px;border-radius:4px;color:var(--accent);font-size:12px;">Review [company name / ticker] for my investment panel</span></span>
+      </div>
+    </div>
+
+    <!-- STEP 2: PASTE RESPONSE -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">2</div>
+        <div class="card-title-lg" style="margin-bottom:0;">Paste Claude's Analysis</div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Paste the full response from Claude here</label>
+        <textarea id="import-response" rows="12" placeholder="Paste Claude's full review here...&#10;&#10;The panel will extract: company name, ticker, score, individual ratings, downturn resistance, thesis, checklist, break thesis, and revisit trigger automatically."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-accent" onclick="parseAndPreview()" style="flex:1;">Parse & Preview</button>
+        <button class="btn" onclick="clearReviewForm()">Clear</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: PARSED PREVIEW + DECISION -->
+    <div id="parsed-preview" style="display:none;">
+      <div class="card" style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">1</div>
-          <div class="card-title-lg" style="margin-bottom:0;">Describe the Business</div>
+          <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">3</div>
+          <div class="card-title-lg" style="margin-bottom:0;">Review Parsed Data</div>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>Company Name</label><input id="rb-name" placeholder="e.g. Nemetschek SE"></div>
-          <div class="form-group"><label>Ticker</label><input id="rb-ticker" placeholder="e.g. NEM.DE"></div>
-          <div class="form-group"><label>Country</label><input id="rb-country" placeholder="e.g. Germany"></div>
-          <div class="form-group"><label>Sector</label><input id="rb-sector" placeholder="e.g. Construction SaaS"></div>
+
+        <!-- Company header -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
+          <div id="preview-score-ring" style="width:64px;height:64px;border-radius:50%;border:2px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;background:var(--accent-bg);">
+            <div id="preview-score-num" style="font-size:20px;font-weight:800;color:var(--accent);line-height:1;">—</div>
+            <div style="font-size:8px;color:var(--muted);font-family:var(--font-mono);">SCORE</div>
+          </div>
+          <div style="flex:1;">
+            <div id="preview-company-name" style="font-family:var(--font-display);font-size:20px;color:var(--text);margin-bottom:4px;">—</div>
+            <div id="preview-badges" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          </div>
+          <div style="text-align:right;">
+            <div id="preview-pe" style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text2);">—</div>
+            <div style="font-size:10px;color:var(--muted);">P/E RATIO</div>
+          </div>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>Current P/E</label><input id="rb-pe" type="number" placeholder="e.g. 34.0"></div>
-          <div class="form-group"><label>Revenue Growth % (latest)</label><input id="rb-growth" type="number" placeholder="e.g. 14"></div>
-          <div class="form-group"><label>EBIT Margin %</label><input id="rb-margin" type="number" placeholder="e.g. 28"></div>
-          <div class="form-group"><label>Recurring Revenue %</label><input id="rb-recurring" type="number" placeholder="e.g. 80"></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>FCF Yield %</label><input id="rb-fcf" type="number" placeholder="e.g. 3.2"></div>
-          <div class="form-group"><label>Net Debt / Net Cash</label><input id="rb-debt" placeholder="e.g. Net cash, or 2x EBITDA"></div>
-          <div class="form-group"><label>ROCE %</label><input id="rb-roce" type="number" placeholder="e.g. 22"></div>
-          <div class="form-group"><label>Market Cap (approx)</label><input id="rb-mcap" placeholder="e.g. €4B"></div>
-        </div>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label>Business Description — What does it do? Who are its customers? What is the moat?</label>
-          <textarea id="rb-description" rows="3" placeholder="e.g. Nemetschek provides BIM/CAD software for architects, engineers and construction companies. Market leader in Europe. Subscription-based model transitioning from perpetual. Network effects from file format dominance..."></textarea>
-        </div>
-        <div class="form-row">
+
+        <!-- Score breakdown grid -->
+        <div class="section-label" style="margin-bottom:10px;">100-POINT SCORE BREAKDOWN</div>
+        <div class="grid grid-3" style="margin-bottom:16px;" id="parsed-scores-grid"></div>
+
+        <!-- Editable fields -->
+        <div class="form-row" style="margin-bottom:12px;">
           <div class="form-group">
-            <label>Revenue Model</label>
-            <select id="rb-revmodel">
-              <option value="">Select...</option>
-              <option value="pure-saas">Pure SaaS / Subscription</option>
-              <option value="mixed-sub">Mixed — Subscription + Transactional</option>
-              <option value="transactional">Transactional / Usage-based</option>
-              <option value="perpetual-transitioning">Perpetual Licence → Subscription (transitioning)</option>
-              <option value="marketplace">Marketplace / Take-rate</option>
-              <option value="hardware-consumables">Hardware + Consumables</option>
-              <option value="other">Other</option>
-            </select>
+            <label>Total Score (edit if needed)</label>
+            <input id="imp-score" type="number" min="0" max="100">
           </div>
           <div class="form-group">
-            <label>Competitive Position</label>
-            <select id="rb-competitive">
-              <option value="">Select...</option>
-              <option value="dominant">Dominant market leader — near-monopoly</option>
-              <option value="strong-2">Strong #1 or #2 with clear moat</option>
-              <option value="niche-leader">Niche leader in defined segment</option>
-              <option value="competitive">Competitive market, no clear moat</option>
-              <option value="challenged">Losing share or under pressure</option>
-            </select>
+            <label>P/E Ratio</label>
+            <input id="imp-pe" type="number" step="0.1">
           </div>
           <div class="form-group">
-            <label>Geographic Exposure</label>
-            <select id="rb-geo">
-              <option value="">Select...</option>
-              <option value="single-country">Single country / highly concentrated</option>
-              <option value="regional">Regional (1-2 continents)</option>
-              <option value="global">Global</option>
+            <label>Downturn Resistance</label>
+            <select id="imp-dr">
+              <option value="">Unknown</option>
+              <option value="YES">YES</option>
+              <option value="NEUTRAL">NEUTRAL</option>
+              <option value="NO">NO</option>
             </select>
           </div>
         </div>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label>Key Risks / Concerns (your initial read)</label>
-          <textarea id="rb-risks" rows="2" placeholder="e.g. Valuation premium, AI disruption risk, concentration in construction sector..."></textarea>
+        <div class="form-row" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Ticker</label>
+            <input id="imp-ticker" placeholder="e.g. 6532">
+          </div>
+          <div class="form-group">
+            <label>Company Name</label>
+            <input id="imp-name" placeholder="e.g. BayCurrent">
+          </div>
+          <div class="form-group">
+            <label>Country</label>
+            <input id="imp-country" placeholder="e.g. Japan">
+          </div>
+          <div class="form-group">
+            <label>Sector</label>
+            <input id="imp-sector" placeholder="e.g. Consulting">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Any Additional Context (recent earnings, strategic changes, why you're looking at it)</label>
-          <textarea id="rb-context" rows="2" placeholder="e.g. Down 30% from highs, just reported strong Q4, management buyout rumours..."></textarea>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Short Thesis</label>
+          <textarea id="imp-thesis" rows="3"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Post-Earnings Checklist (one item per line)</label>
+          <textarea id="imp-watch" rows="4"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Break Thesis If</label>
+          <textarea id="imp-reason" rows="3"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Revisit Trigger / Notes</label>
+          <input id="imp-trigger">
         </div>
       </div>
-    </div>
 
-    <!-- STEP 2: GENERATE PROMPT -->
-    <div class="grid grid-12" style="margin-bottom:16px;">
-      <div class="card span-12">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">2</div>
-          <div class="card-title-lg" style="margin-bottom:0;">Copy Prompt → Ask Claude</div>
+      <!-- DECISION -->
+      <div class="card">
+        <div class="card-title">Decision</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <button class="btn" style="padding:16px;flex-direction:column;gap:6px;height:auto;border-color:var(--red);color:var(--red);background:var(--red-bg);" onclick="decideReview('reject')">
+            <span style="font-size:20px;">✕</span>
+            <span style="font-weight:700;font-size:13px;">Reject</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:400;">Remove from consideration</span>
+          </button>
+          <button class="btn" style="padding:16px;flex-direction:column;gap:6px;height:auto;border-color:var(--gold);color:var(--gold);background:var(--gold-bg);" onclick="decideReview('watchlist')">
+            <span style="font-size:20px;">◎</span>
+            <span style="font-weight:700;font-size:13px;">Add to Watchlist</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:400;">Monitor — not ready yet</span>
+          </button>
+          <button class="btn" style="padding:16px;flex-direction:column;gap:6px;height:auto;border-color:var(--accent);color:var(--accent);background:var(--accent-bg);" onclick="decideReview('candidates')">
+            <span style="font-size:20px;">✦</span>
+            <span style="font-weight:700;font-size:13px;">Add to Candidates</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:400;">Move to main list</span>
+          </button>
         </div>
-        <div class="notice notice-info" style="margin-bottom:12px;">
-          <span class="notice-icon">◎</span>
-          <span>Click <strong>Generate Prompt</strong> to build a fully structured brief. Copy it and paste it into your Claude.ai conversation — Claude knows your full strategy and will return a scored analysis. Then come back and use <strong>Import Score</strong> below.</span>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button class="btn btn-accent" onclick="generateReviewPrompt()" style="flex:1;">Generate Prompt</button>
-          <button class="btn" id="copy-prompt-btn" onclick="copyPrompt()" style="display:none;">⎘ Copy to Clipboard</button>
-        </div>
-        <div id="review-prompt-box" style="display:none;">
-          <textarea id="review-prompt-text" rows="12" readonly
-            style="width:100%;font-size:11px;font-family:var(--font-mono);background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:12px;color:var(--muted2);resize:vertical;line-height:1.6;"></textarea>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 3: IMPORT SCORE -->
-    <div class="grid grid-12">
-      <div class="card span-12">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">3</div>
-          <div class="card-title-lg" style="margin-bottom:0;">Import Claude's Score → Save to Pipeline</div>
-        </div>
-        <div class="notice notice-info" style="margin-bottom:12px;">
-          <span class="notice-icon">◎</span>
-          <span>Paste Claude's full response below. The panel will extract the score, DR rating, thesis, and notes — then let you save directly to Pipeline or promote to Candidates.</span>
-        </div>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label>Paste Claude's Response Here</label>
-          <textarea id="import-response" rows="10" placeholder="Paste Claude's full scoring response here...&#10;&#10;The panel will parse the total score, individual ratings, downturn resistance, thesis summary, and key risks automatically."></textarea>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
-          <button class="btn btn-accent" onclick="parseAndPreview()" style="flex:1;">Parse & Preview</button>
-          <button class="btn" onclick="clearReviewForm()">Clear All</button>
-        </div>
-
-        <!-- PARSED PREVIEW -->
-        <div id="parsed-preview" style="display:none;">
-          <div class="divider"></div>
-          <div class="section-label" style="margin-bottom:12px;">PARSED RESULT — REVIEW BEFORE SAVING</div>
-          <div class="grid grid-3" style="margin-bottom:16px;" id="parsed-scores-grid"></div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Total Score (edit if needed)</label>
-              <input id="imp-score" type="number" min="0" max="100">
-            </div>
-            <div class="form-group">
-              <label>Downturn Resistance</label>
-              <select id="imp-dr">
-                <option value="">Unknown</option>
-                <option value="YES">YES</option>
-                <option value="NEUTRAL">NEUTRAL</option>
-                <option value="NO">NO</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Stage</label>
-              <select id="imp-stage">
-                <option value="rated">Rated</option>
-                <option value="watchlist">Watchlist</option>
-                <option value="deep-review">Deep Review</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>Short Thesis (extracted / edit)</label>
-            <textarea id="imp-thesis" rows="2"></textarea>
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>Key Risks / Rejection Reason</label>
-            <textarea id="imp-reason" rows="2"></textarea>
-          </div>
-          <div class="form-group" style="margin-bottom:16px;">
-            <label>Revisit Trigger</label>
-            <input id="imp-trigger" placeholder="e.g. P/E compresses below 25×...">
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-accent" onclick="saveImportedToPipeline()" style="flex:1;">→ Save to Pipeline</button>
-            <button class="btn" onclick="saveImportedToFullCandidates()" style="flex:0 0 auto;">→ Add as Full Candidate</button>
-          </div>
+        <!-- Replace candidate option -->
+        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
+          <label style="margin-bottom:6px;">If replacing a current candidate:</label>
+          <select id="imp-replaces">
+            <option value="">— Not replacing anyone —</option>
+          </select>
         </div>
       </div>
     </div>
@@ -1230,7 +1210,7 @@ label {
 <div class="modal-overlay" id="modal-pipeline">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Add Pipeline Candidate</div>
+      <div class="modal-title">Add to Watchlist</div>
       <button class="modal-close" onclick="closeModal('modal-pipeline')">✕</button>
     </div>
     <div class="form-row">
@@ -2501,26 +2481,59 @@ function parseAndPreview() {
   const raw = document.getElementById('import-response').value.trim();
   if (!raw) { showToast('Paste Claude response first'); return; }
 
+  // Extract company name — look for patterns like "**CompanyName**" or "Company: X" or "# CompanyName"
+  let companyName = '';
+  const namePatterns = [
+    /^#\s+(.+?)(?:\s*\(|$)/m,
+    /\*\*([A-Z][^\*]{2,40})\*\*/,
+    /Company[^:]*:\s*([^\n]{3,50})/i,
+    /^([A-Z][A-Za-z\s]{3,40})\n[-=]{3,}/m,
+  ];
+  for (const p of namePatterns) {
+    const m = raw.match(p);
+    if (m && m[1] && m[1].trim().length > 2) { companyName = m[1].trim(); break; }
+  }
+
+  // Extract ticker
+  let ticker = '';
+  const tickerMatch = raw.match(/[Tt]icker[^:]*:\s*([A-Z0-9]{2,8})/m) || raw.match(/\(([A-Z0-9]{2,8})\)/) || raw.match(/\b([0-9]{4})\b/);
+  if (tickerMatch) ticker = (tickerMatch[1]||tickerMatch[2]||tickerMatch[3]||'').trim();
+
+  // Extract country
+  let country = '';
+  const countryMatch = raw.match(/Country[^:]*:[\s]*([^\n]{2,30})/i);
+  if (countryMatch) country = (countryMatch[1]||countryMatch[2]||'').trim();
+
+  // Extract sector
+  let sector = '';
+  const sectorMatch = raw.match(/Sector[^:]*:[\s]*([^\n]{3,40})/i) || raw.match(/Industry[^:]*:[\s]*([^\n]{3,40})/i);
+  if (sectorMatch) sector = (sectorMatch[1]||sectorMatch[2]||'').trim();
+
+  // Extract P/E
+  let pe = 0;
+  const peMatch = raw.match(/P[/\\]E[^0-9]*([0-9]+\.?[0-9]*)/i);
+  if (peMatch) pe = parseFloat(peMatch[1]);
+
   // Extract total score
   let score = 0;
-  const sm1 = raw.match(/TOTAL[^\n]*?(\d+)/i);
-  const sm2 = raw.match(/(\d+)\s*\/\s*100/i);
+  const sm1 = raw.match(/TOTAL[^\n]*?([6-9][0-9]|100)(?:\/100)?/i);
+  const sm2 = raw.match(/([6-9][0-9]|100)\s*\/\s*100/);
   if (sm1) score = parseInt(sm1[1]);
   else if (sm2) score = parseInt(sm2[1]);
 
   // Extract individual ratings
   const ratingPatterns = [
-    { key:'moat',              label:'Moat Strength',        regex:/Moat[^\n]*?(\d+)\s*\/\s*14/i },
-    { key:'predictability',    label:'Predictability',       regex:/Predictability[^\n]*?(\d+)\s*\/\s*14/i },
-    { key:'growth_durability', label:'Growth Durability',    regex:/Growth Durability[^\n]*?(\d+)\s*\/\s*12/i },
-    { key:'revenue_quality',   label:'Revenue Quality',      regex:/Revenue Quality[^\n]*?(\d+)\s*\/\s*12/i },
-    { key:'balance_sheet',     label:'Balance Sheet',        regex:/Balance Sheet[^\n]*?(\d+)\s*\/\s*10/i },
-    { key:'growth_strength',   label:'Growth Strength',      regex:/Growth Strength[^\n]*?(\d+)\s*\/\s*8/i },
-    { key:'reinvestment_runway', label:'Reinvestment Runway',regex:/Reinvestment[^\n]*?(\d+)\s*\/\s*8/i },
-    { key:'management',        label:'Management',           regex:/Management[^\n]*?(\d+)\s*\/\s*7/i },
-    { key:'capital_allocation', label:'Capital Allocation',  regex:/Capital Allocation[^\n]*?(\d+)\s*\/\s*6/i },
-    { key:'roce',              label:'ROCE',                 regex:/ROCE[^\n]*?(\d+)\s*\/\s*6/i },
-    { key:'capex_intensity',   label:'Capex Intensity',      regex:/Capex[^\n]*?(\d+)\s*\/\s*3/i },
+    { key:'moat',              label:'Moat Strength',        regex:/Moat[^\n]*?([0-9]+)\s*\/\s*14/i },
+    { key:'predictability',    label:'Predictability',       regex:/Predictability[^\n]*?([0-9]+)\s*\/\s*14/i },
+    { key:'growth_durability', label:'Growth Durability',    regex:/Growth Durability[^\n]*?([0-9]+)\s*\/\s*12/i },
+    { key:'revenue_quality',   label:'Revenue Quality',      regex:/Revenue Quality[^\n]*?([0-9]+)\s*\/\s*12/i },
+    { key:'balance_sheet',     label:'Balance Sheet',        regex:/Balance Sheet[^\n]*?([0-9]+)\s*\/\s*10/i },
+    { key:'growth_strength',   label:'Growth Strength',      regex:/Growth Strength[^\n]*?([0-9]+)\s*\/\s*8/i },
+    { key:'reinvestment_runway', label:'Reinvestment Runway',regex:/Reinvestment[^\n]*?([0-9]+)\s*\/\s*8/i },
+    { key:'management',        label:'Management',           regex:/Management[^\n]*?([0-9]+)\s*\/\s*7/i },
+    { key:'capital_allocation', label:'Capital Allocation',  regex:/Capital Allocation[^\n]*?([0-9]+)\s*\/\s*6/i },
+    { key:'roce',              label:'ROCE',                 regex:/ROCE[^\n]*?([0-9]+)\s*\/\s*6/i },
+    { key:'capex_intensity',   label:'Capex Intensity',      regex:/Capex[^\n]*?([0-9]+)\s*\/\s*3/i },
   ];
   const extractedRatings = {};
   ratingPatterns.forEach(p => {
@@ -2532,39 +2545,60 @@ function parseAndPreview() {
   const drMatch = raw.match(/DOWNTURN RESISTANCE[^\n]*(YES|NEUTRAL|NO)/i);
   const dr = drMatch ? drMatch[1].toUpperCase() : '';
 
-  // Extract thesis — text after SHORT THESIS header
+  // Extract thesis
   let thesis = '';
-  const thIdx = raw.indexOf('SHORT THESIS');
+  const thIdx = raw.search(/SHORT THESIS|## Thesis|INVESTMENT THESIS/i);
   if (thIdx > -1) {
-    const thSlice = raw.slice(thIdx + 12, thIdx + 400).trim();
-    thesis = thSlice.split('\n\n')[0].replace(/^[:—\-\s]+/, '').slice(0, 300).trim();
+    const thSlice = raw.slice(thIdx, thIdx + 500).replace(/SHORT THESIS|## Thesis|INVESTMENT THESIS/i,'').trim();
+    thesis = thSlice.split('\n\n')[0].replace(/^[:—\-\s#]+/, '').slice(0, 400).trim();
   }
 
-  // Extract risks
+  // Extract watch / checklist
+  let watch = '';
+  const wIdx = raw.search(/POST.EARNINGS|WHAT TO WATCH|CHECKLIST|KEY KPIs/i);
+  if (wIdx > -1) {
+    const wSlice = raw.slice(wIdx, wIdx + 600).replace(/POST.EARNINGS CHECKLIST|WHAT TO WATCH|CHECKLIST|KEY KPIs/i,'').trim();
+    watch = wSlice.split(/\n\n/)[0].replace(/^[:—\-\s#]+/, '').slice(0, 500).trim();
+  }
+
+  // Extract break thesis
   let risks = '';
   const rkIdx = raw.search(/BREAK THESIS|KEY RISKS/i);
   if (rkIdx > -1) {
-    const rkSlice = raw.slice(rkIdx, rkIdx + 400);
-    const rkBody = rkSlice.replace(/BREAK THESIS IF|BREAK THESIS|KEY RISKS/i, '').trim();
-    risks = rkBody.split('\n\n')[0].replace(/^[:—\-\s]+/, '').slice(0, 300).trim();
+    const rkSlice = raw.slice(rkIdx, rkIdx + 500);
+    risks = rkSlice.replace(/BREAK THESIS IF|BREAK THESIS|KEY RISKS/i,'').replace(/^[:—\-\s#]+/,'').split('\n\n')[0].slice(0,400).trim();
   }
 
   // Extract revisit trigger
   let trigger = '';
-  const trIdx = raw.search(/REVISIT TRIGGER/i);
+  const trIdx = raw.search(/REVISIT TRIGGER|WATCHLIST CONDITION/i);
   if (trIdx > -1) {
-    const trSlice = raw.slice(trIdx, trIdx + 300);
-    trigger = trSlice.replace(/REVISIT TRIGGER/i, '').replace(/^[:—\-\s]+/, '').split('\n\n')[0].slice(0, 200).trim();
+    trigger = raw.slice(trIdx, trIdx+250).replace(/REVISIT TRIGGER|WATCHLIST CONDITION/i,'').replace(/^[:—\-\s]+/,'').split('\n\n')[0].slice(0,200).trim();
   }
 
   // Populate fields
   document.getElementById('imp-score').value = score || '';
+  document.getElementById('imp-pe').value = pe || '';
+  document.getElementById('imp-ticker').value = ticker;
+  document.getElementById('imp-name').value = companyName;
+  document.getElementById('imp-country').value = country;
+  document.getElementById('imp-sector').value = sector;
   if (dr) document.getElementById('imp-dr').value = dr;
   document.getElementById('imp-thesis').value = thesis;
+  document.getElementById('imp-watch').value = watch;
   document.getElementById('imp-reason').value = risks;
   document.getElementById('imp-trigger').value = trigger;
 
-  // Show score grid
+  // Update preview header
+  document.getElementById('preview-score-num').textContent = score || '—';
+  document.getElementById('preview-company-name').textContent = companyName || 'Unknown Company';
+  document.getElementById('preview-pe').textContent = pe ? pe.toFixed(1)+'×' : '—';
+  document.getElementById('preview-badges').innerHTML =
+    (ticker ? `<span class="badge badge-pipeline">${ticker}</span>` : '') +
+    (dr ? drBadge(dr) : '') +
+    (country ? `<span class="badge badge-watchlist">${country}</span>` : '');
+
+  // Score breakdown grid
   const grid = document.getElementById('parsed-scores-grid');
   const WEIGHTS = {moat:14,predictability:14,growth_durability:12,revenue_quality:12,balance_sheet:10,growth_strength:8,reinvestment_runway:8,management:7,capital_allocation:6,roce:6,capex_intensity:3};
   grid.innerHTML = ratingPatterns.map(p => {
@@ -2572,73 +2606,111 @@ function parseAndPreview() {
     const max = WEIGHTS[p.key] || 14;
     const pct = Math.round((val/max)*100);
     return '<div class="val-item" style="text-align:left;padding:10px 12px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
-      '<span style="font-size:10px;color:var(--muted2);">' + p.label + '</span>' +
-      '<span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:600;">' + val + '<span style="color:var(--muted);font-size:10px;">/' + max + '</span></span>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">' +
+      '<span style="font-size:10px;color:var(--muted2);font-weight:600;">' + p.label + '</span>' +
+      '<span style="font-family:var(--font-mono);font-size:13px;color:var(--accent);font-weight:700;">' + val + '<span style="color:var(--muted);font-size:10px;">/' + max + '</span></span>' +
       '</div>' +
-      '<div style="height:3px;background:var(--surface3);border-radius:2px;">' +
-      '<div style="height:3px;width:' + pct + '%;background:var(--accent);border-radius:2px;"></div>' +
+      '<div style="height:4px;background:var(--surface3);border-radius:2px;">' +
+      '<div style="height:4px;width:' + pct + '%;background:var(--accent);border-radius:2px;"></div>' +
       '</div></div>';
   }).join('');
 
   window._parsedRatings = extractedRatings;
+
+  // Populate replace dropdown
+  const stocks = load('stocks').filter(s=>s.status==='active');
+  const sel = document.getElementById('imp-replaces');
+  sel.innerHTML = '<option value="">— Not replacing anyone —</option>' +
+    stocks.map(s=>`<option value="${s.id}">${s.name} (${s.ticker}) — Score ${s.score||'?'}</option>`).join('');
+
   document.getElementById('parsed-preview').style.display = 'block';
-  document.getElementById('parsed-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  showToast('Score parsed — review and save');
+  document.getElementById('parsed-preview').scrollIntoView({ behavior:'smooth', block:'start' });
+  showToast('Parsed — review and decide');
 }
 
-function saveImportedToPipeline() {
-  const ticker = document.getElementById('rb-ticker').value.trim().toUpperCase() || '—';
-  const name   = document.getElementById('rb-name').value.trim() || 'Unknown';
-  const score  = parseInt(document.getElementById('imp-score').value) || 0;
-  const dr     = document.getElementById('imp-dr').value;
-  const stage  = document.getElementById('imp-stage').value;
-  const reason = document.getElementById('imp-reason').value.trim();
-  const trigger= document.getElementById('imp-trigger').value.trim();
-  const pe     = parseFloat(document.getElementById('rb-pe').value) || 0;
+function decideReview(decision) {
+  const ticker  = document.getElementById('imp-ticker').value.trim().toUpperCase() || '?';
+  const name    = document.getElementById('imp-name').value.trim() || 'Unknown';
+  const score   = parseInt(document.getElementById('imp-score').value) || 0;
+  const pe      = parseFloat(document.getElementById('imp-pe').value) || 0;
+  const dr      = document.getElementById('imp-dr').value;
+  const country = document.getElementById('imp-country').value.trim();
+  const sector  = document.getElementById('imp-sector').value.trim();
+  const thesis  = document.getElementById('imp-thesis').value.trim();
+  const watch   = document.getElementById('imp-watch').value.trim();
+  const reason  = document.getElementById('imp-reason').value.trim();
+  const trigger = document.getElementById('imp-trigger').value.trim();
+  const replaces= document.getElementById('imp-replaces').value;
+  const ratings = window._parsedRatings || {};
 
-  const pipeline = load('pipeline');
-  pipeline.push({
-    id: uid(),
-    ticker, name, stage, score, pe, dr,
-    reason, trigger,
-    reviewed: today(),
-    thesis: document.getElementById('imp-thesis').value.trim(),
-    ratings: window._parsedRatings || {},
-  });
-  save('pipeline', pipeline);
-  closeReviewAndGo('pipeline');
-  showToast(`${name} saved to Pipeline`);
-  updateBadges();
-}
+  if (decision === 'reject') {
+    showToast(name + ' rejected — not added anywhere');
+    clearReviewForm();
+    return;
+  }
 
-function saveImportedToFullCandidates() {
-  const r = window._parsedRatings || {};
-  const ticker = document.getElementById('rb-ticker').value.trim().toUpperCase();
-  const name   = document.getElementById('rb-name').value.trim();
-  const score  = parseInt(document.getElementById('imp-score').value) || 0;
-
-  // Pre-fill the add stock modal with what we have
-  openAddStock();
-  document.getElementById('f-ticker').value = ticker;
-  document.getElementById('f-name').value = name;
-  document.getElementById('f-country').value = document.getElementById('rb-country').value;
-  document.getElementById('f-sector').value = document.getElementById('rb-sector').value;
-  document.getElementById('f-pe').value = document.getElementById('rb-pe').value;
-  document.getElementById('f-status').value = 'watchlist';
-  document.getElementById('f-dr').value = document.getElementById('imp-dr').value || 'NEUTRAL';
-  document.getElementById('f-thesis').value = document.getElementById('imp-thesis').value;
-  document.getElementById('f-break').value = document.getElementById('imp-reason').value;
-
-  // Fill ratings
-  buildRatingFormFields();
-  setTimeout(() => {
-    Object.entries(r).forEach(([key, val]) => {
-      const el = document.getElementById('rf-' + key);
-      if (el) el.value = val;
+  if (decision === 'watchlist') {
+    const pipeline = load('pipeline');
+    pipeline.push({
+      id: uid(), ticker, name, stage: 'watchlist',
+      score, pe, dr, country, sector,
+      reason: reason || thesis,
+      trigger, thesis, watch,
+      reviewed: today(),
+      ratings,
     });
-    updateLiveScore();
-  }, 50);
+    save('pipeline', pipeline);
+    updateBadges();
+    showToast(name + ' added to Watchlist');
+    clearReviewForm();
+    showPage('pipeline');
+    return;
+  }
+
+  if (decision === 'candidates') {
+    const stocks = load('stocks');
+
+    // If replacing, move old stock to watchlist
+    if (replaces) {
+      const old = stocks.find(s=>s.id===replaces);
+      if (old) {
+        old.status = 'watchlist';
+        const pipeline = load('pipeline');
+        pipeline.push({
+          id: uid(), ticker: old.ticker, name: old.name,
+          stage: 'watchlist', score: old.score, pe: old.pe, dr: old.dr,
+          reason: 'Replaced by ' + name + ' in Candidates list.',
+          trigger: 'Re-evaluate if ' + name + ' thesis breaks.',
+          reviewed: today(),
+        });
+        save('pipeline', pipeline);
+      }
+    }
+
+    // Add new stock as active candidate
+    const newStock = {
+      id: uid(), ticker, name, country, sector,
+      type: 'compounder', status: 'active',
+      price: 0, pe, eps: 0, fcf: 0,
+      score, ...ratings, dr,
+      target_alloc: 0, starter_alloc: 0,
+      t1: '', t2: '', conviction: 'medium',
+      price_status: 'waiting',
+      thesis, watch,
+      break_thesis: reason, notes: trigger,
+    };
+    stocks.push(newStock);
+    save('stocks', stocks);
+
+    // Remove from watchlist if it was there
+    const pipeline = load('pipeline').filter(p=>p.ticker!==ticker);
+    save('pipeline', pipeline);
+
+    updateBadges();
+    showToast(name + ' added to Candidates' + (replaces ? ' (replaced previous)' : ''));
+    clearReviewForm();
+    showPage('compounders');
+  }
 }
 
 function closeReviewAndGo(page) {
@@ -2646,18 +2718,20 @@ function closeReviewAndGo(page) {
 }
 
 function clearReviewForm() {
-  ['rb-name','rb-ticker','rb-country','rb-sector','rb-pe','rb-growth','rb-margin',
-   'rb-recurring','rb-fcf','rb-debt','rb-roce','rb-mcap','rb-description',
-   'rb-risks','rb-context','import-response','imp-thesis','imp-reason','imp-trigger'].forEach(id => {
+  ['import-response','imp-thesis','imp-watch','imp-reason','imp-trigger',
+   'imp-ticker','imp-name','imp-country','imp-sector'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  document.getElementById('review-prompt-box').style.display = 'none';
-  document.getElementById('copy-prompt-btn').style.display = 'none';
+  ['imp-score','imp-pe'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('parsed-preview').style.display = 'none';
   window._parsedRatings = {};
   showToast('Form cleared');
 }
+
 
 /* ============================================================
    INIT
