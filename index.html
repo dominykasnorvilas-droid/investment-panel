@@ -1469,7 +1469,14 @@ function renderPage(name) {
   else if (name==='pipeline') renderPipeline();
   else if (name==='earnings') renderEarnings();
   else if (name==='documents') renderDocuments();
-  else if (name==='review') renderReview();
+  else if (name==='review') {
+    renderReview();
+    // Re-render charts after page transition completes
+    setTimeout(() => {
+      const reviews = load('reviews');
+      if (reviews) reviews.forEach(rev => renderReviewChart(rev));
+    }, 400);
+  }
 }
 
 /* ============================================================
@@ -2352,6 +2359,11 @@ function renderReviewChart(r) {
   const chartId = 'review-chart-' + r.id;
   const el = document.getElementById(chartId);
   if (!el) return;
+  // If element has no width yet, retry after paint
+  if (el.offsetWidth === 0) {
+    setTimeout(() => renderReviewChart(r), 300);
+    return;
+  }
 
   const stocks = load('stocks').filter(s => s.status === 'active' && s.score > 0 && s.pe > 0);
 
@@ -2672,10 +2684,12 @@ function renderReview() {
       ${decisionBtns}
     </div>`;
 
-  // Render charts after DOM is fully updated
-  setTimeout(() => {
-    reviews.forEach(rev => renderReviewChart(rev));
-  }, 200);
+  // Render charts after DOM paint completes
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      reviews.forEach(rev => renderReviewChart(rev));
+    });
+  });
   }
 
   let html = '';
