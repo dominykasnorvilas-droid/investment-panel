@@ -1602,7 +1602,12 @@ function renderPortfolio() {
           <span class="td-mono">${p.portfolioPct.toFixed(1)}%</span>
         </div>
       </td>
-      <td style="font-size:13px;color:var(--muted2);max-width:220px;">${p.notes||'—'}</td>`;
+      <td style="font-size:13px;max-width:220px;
+        color:${p.ticker==='FLOW'?'#c9a227':
+               (p.ticker==='XYF'||p.ticker==='OMSE'||p.ticker==='UA-MINE')?'var(--red)':
+               'var(--blue)'};">
+        ${p.notes||'—'}
+      </td>`;
     tbody.appendChild(tr);
   });
 }
