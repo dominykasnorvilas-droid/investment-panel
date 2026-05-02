@@ -1564,11 +1564,10 @@ function renderPage(name) {
    DASHBOARD
    ============================================================ */
 async function refreshPortfolioPrices() {
-  const btn = document.getElementById('refresh-portfolio-btn');
+  const btn = document.getElementById('refresh-portfolio-btn') || document.getElementById('main-refresh-btn');
   const statusEl = document.getElementById('portfolio-last-updated');
-  btn.textContent = '⟳ Fetching...';
-  btn.disabled = true;
-  statusEl.textContent = '';
+  if (btn) { btn.textContent = '⟳ Fetching...'; btn.disabled = true; }
+  if (statusEl) statusEl.textContent = '';
 
   try {
     const portfolio = load('portfolio');
@@ -1643,19 +1642,17 @@ async function refreshPortfolioPrices() {
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
-    statusEl.textContent = `Updated ${timeStr} · ${updatedCount}/${tickers.length} prices fetched`;
-    statusEl.style.color = 'var(--accent)';
+    if (statusEl) { statusEl.textContent = `Updated ${timeStr} · ${updatedCount}/${tickers.length} prices fetched`; statusEl.style.color = 'var(--accent)'; }
 
     showToast(`Portfolio updated — ${updatedCount} prices refreshed`);
 
   } catch(e) {
     console.error('Portfolio refresh error:', e);
-    statusEl.textContent = 'Failed: ' + e.message;
-    statusEl.style.color = 'var(--red)';
+    if (statusEl) { statusEl.textContent = 'Failed: ' + e.message; statusEl.style.color = 'var(--red)'; }
     showToast('Price fetch failed — try again or check console');
   } finally {
-    btn.textContent = '↺ Refresh Prices';
-    btn.disabled = false;
+    const b = document.getElementById('refresh-portfolio-btn') || document.getElementById('main-refresh-btn');
+    if (b) { b.textContent = '↺ Refresh'; b.disabled = false; }
   }
 }
 
