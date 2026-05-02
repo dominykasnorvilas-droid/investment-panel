@@ -746,11 +746,7 @@ label {
               <th>TICKER</th>
               <th>NAME</th>
               <th>COUNTRY</th>
-              <th>INVESTED</th>
               <th>CURRENT VALUE</th>
-              <th>P/L</th>
-              <th>P/L %</th>
-              <th>P/E NOW</th>
               <th>PORTFOLIO %</th>
               <th>NOTES</th>
             </tr>
@@ -1549,12 +1545,12 @@ function renderPortfolio() {
   if (!portfolio || portfolio.length === 0) return;
 
   // KPIs
-  const totalInvested = portfolio.reduce((s,p) => s + (p.invested||0), 0);
-  const totalValue = portfolio.reduce((s,p) => s + (p.currentValue||0), 0);
-  const totalPL = totalValue - totalInvested;
-  const totalPLPct = ((totalPL / totalInvested) * 100).toFixed(2);
-  const winners = portfolio.filter(p => p.pl > 0).length;
-  const losers = portfolio.filter(p => p.pl < 0).length;
+  const TOTAL_INVESTED = 210000; // Fixed from Excel
+  const CASH = -14594;           // Current cash balance
+  const stocksValue = portfolio.reduce((s,p) => s + (p.currentValue||0), 0);
+  const totalValue = stocksValue + CASH;
+  const totalPL = totalValue - TOTAL_INVESTED;
+  const totalPLPct = ((totalPL / TOTAL_INVESTED) * 100).toFixed(2);
 
   const plColor = totalPL >= 0 ? 'var(--accent)' : 'var(--red)';
   const plSign = totalPL >= 0 ? '+' : '';
@@ -1562,7 +1558,15 @@ function renderPortfolio() {
   document.getElementById('portfolio-kpis').innerHTML = `
     <div style="text-align:right;">
       <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">TOTAL INVESTED</div>
-      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text2);">€${totalInvested.toLocaleString()}</div>
+      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text2);">€${TOTAL_INVESTED.toLocaleString()}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">STOCKS VALUE</div>
+      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text2);">€${Math.round(stocksValue).toLocaleString()}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">CASH</div>
+      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--red);">€${CASH.toLocaleString()}</div>
     </div>
     <div style="text-align:right;">
       <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">PORTFOLIO VALUE</div>
@@ -1570,11 +1574,7 @@ function renderPortfolio() {
     </div>
     <div style="text-align:right;">
       <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">TOTAL P/L</div>
-      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:${plColor};">${plSign}€${Math.round(Math.abs(totalPL)).toLocaleString()} (${plSign}${totalPLPct}%)</div>
-    </div>
-    <div style="text-align:right;">
-      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">POSITIONS</div>
-      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text2);">${winners} <span style="color:var(--accent);">▲</span> / ${losers} <span style="color:var(--red);">▼</span></div>
+      <div style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:${plColor};">${plSign}€${Math.round(Math.abs(totalPL)).toLocaleString()}<span style="font-size:13px;margin-left:6px;">(${plSign}${totalPLPct}%)</span></div>
     </div>`;
 
   // Table
@@ -1591,18 +1591,14 @@ function renderPortfolio() {
       <td class="td-ticker">${p.ticker}</td>
       <td style="font-weight:600;">${p.name}</td>
       <td><span class="badge badge-pipeline" style="font-size:11px;">${p.country}</span></td>
-      <td class="td-mono">€${Math.round(p.invested).toLocaleString()}</td>
       <td class="td-mono" style="font-weight:600;">€${Math.round(p.currentValue).toLocaleString()}</td>
-      <td class="td-mono" style="color:${plColor};font-weight:600;">${plSign}€${Math.round(Math.abs(p.pl)).toLocaleString()}</td>
-      <td class="td-mono" style="color:${plColor};font-weight:600;">${plSign}${p.plPct.toFixed(2)}%</td>
-      <td class="td-mono">${p.peNow ? p.peNow.toFixed(1)+'×' : '—'}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;">
-          <div style="height:4px;width:${Math.min(p.portfolioPct,100)}px;max-width:100px;background:${p.pl>=0?'var(--accent)':'var(--red)'};border-radius:2px;opacity:0.7;"></div>
+          <div style="height:4px;width:${Math.min(p.portfolioPct*1.2,120)}px;max-width:120px;background:var(--accent);border-radius:2px;opacity:0.7;"></div>
           <span class="td-mono">${p.portfolioPct.toFixed(1)}%</span>
         </div>
       </td>
-      <td style="font-size:12px;color:var(--muted2);max-width:180px;">${p.notes||'—'}</td>`;
+      <td style="font-size:13px;color:var(--muted2);max-width:220px;">${p.notes||'—'}</td>`;
     tbody.appendChild(tr);
   });
 }
