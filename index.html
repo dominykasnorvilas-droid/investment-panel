@@ -2508,18 +2508,29 @@ function renderReview() {
         <div style="flex:1;">
           <div style="font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:5px;">${r.name} <span style="font-family:var(--font-mono);font-size:13px;color:var(--accent);">${r.ticker}</span></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
-            ${drBadge(r.dr)}
             <span class="badge badge-pipeline">${r.country||''}</span>
             <span class="badge badge-compounder">${r.sector||''}</span>
             ${isPending?'<span class="badge badge-watchlist">PENDING DECISION</span>':''}
           </div>
           <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">Reviewed by Claude · ${r.reviewed_date||''}</div>
         </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text2);">${r.pe?r.pe.toFixed(1)+'×':'—'}</div>
-          <div style="font-size:10px;color:var(--muted);">P/E RATIO</div>
-          <div style="font-family:var(--font-mono);font-size:14px;color:var(--muted2);margin-top:4px;">${r.price?r.price.toLocaleString():'—'}</div>
-          <div style="font-size:10px;color:var(--muted);">PRICE</div>
+        <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text2);">${r.pe?r.pe.toFixed(1)+'×':'—'}</div>
+            <div style="font-size:10px;color:var(--muted);text-align:right;">P/E RATIO</div>
+            <div style="font-family:var(--font-mono);font-size:14px;color:var(--muted2);margin-top:4px;">${r.price?r.price.toLocaleString():'—'}</div>
+            <div style="font-size:10px;color:var(--muted);text-align:right;">PRICE</div>
+          </div>
+          <div style="padding:10px 16px;border-radius:10px;text-align:center;
+            background:${r.dr==='YES'?'rgba(26,122,69,0.1)':r.dr==='NO'?'rgba(192,57,43,0.08)':'rgba(184,134,11,0.08)'};
+            border:1px solid ${r.dr==='YES'?'rgba(26,122,69,0.25)':r.dr==='NO'?'rgba(192,57,43,0.2)':'rgba(184,134,11,0.2)'};
+            min-width:90px;">
+            <div style="font-size:9px;font-weight:700;font-family:var(--font-mono);letter-spacing:0.08em;color:var(--muted);margin-bottom:4px;">DOWNTURN RES.</div>
+            <div style="font-family:var(--font-mono);font-size:18px;font-weight:800;
+              color:${r.dr==='YES'?'var(--accent)':r.dr==='NO'?'var(--red)':'var(--gold)'};">
+              ${r.dr||'—'}
+            </div>
+          </div>
         </div>
       </div>
 
