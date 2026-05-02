@@ -717,7 +717,7 @@ label {
   <div class="page active" id="page-dashboard">
     <div class="page-header">
       <div>
-        <div class="page-title">Candidates Overview</div>
+        <div class="page-title">Portfolio & Candidates Overview</div>
         <div class="page-subtitle">FLOW-COMPOUNDER ROTATION FRAMEWORK</div>
       </div>
       <div class="header-actions">
@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '2.8';
+const DATA_VERSION = '2.9';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1746,7 +1746,12 @@ function renderDashboard() {
   const attacks = active.filter(s=>s.type==='attack');
   const watchlist = stocks.filter(s=>s.status==='watchlist');
 
-  // KPIs
+  // KPIs — FLOW allocation from live portfolio
+  const portfolio = load('portfolio');
+  const flowPos = portfolio.find(p => p.ticker === 'FLOW');
+  const stocksTotal = portfolio.reduce((s,p) => s + (p.currentValue||0), 0);
+  const flowPct = flowPos && stocksTotal > 0 ? ((flowPos.currentValue / stocksTotal) * 100).toFixed(1) : (flow.alloc||80);
+
   document.getElementById('kpi-row').innerHTML = `
     <div class="card kpi-card col-3">
       <div class="kpi-val">${compounders.length}</div>
@@ -1759,9 +1764,9 @@ function renderDashboard() {
       <div class="kpi-delta delta-warn">◉ Signal-Driven</div>
     </div>
     <div class="card kpi-card col-3">
-      <div class="kpi-val">${flow.alloc||80}%</div>
+      <div class="kpi-val">${flowPct}%</div>
       <div class="kpi-label">FLOW Allocation</div>
-      <div class="kpi-delta delta-blue">≋ ${(flow.regime||'low-cheap').replace('-',' ').toUpperCase()}</div>
+      <div class="kpi-delta delta-blue">≋ ${(flow.regime||'low-cheap').replace(/-/g,' ').toUpperCase()}</div>
     </div>
     <div class="card kpi-card col-3">
       <div class="kpi-val">${watchlist.length}</div>
