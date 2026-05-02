@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.1';
+const DATA_VERSION = '3.2';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1431,16 +1431,19 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
   }
 
   const pipeline = [
-    { id: uid(), ticker:'NEMETSCHEK', name:'Nemetschek SE', stage:'watchlist', score:87, pe:34.0, dr:'NEUTRAL',
+    { id: uid(), ticker:'NEMETSCHEK', name:'Nemetschek SE', stage:'watchlist', yTicker:'NEM.DE', score:87, pe:34.0, dr:'NEUTRAL',
       reason:'High-quality but clearly more expensive than current alternatives. P/E premium not justified given similar quality to top names.',
       trigger:'P/E compresses to ~22-26× to match Medistim quality-adjusted valuation.', reviewed: today() },
-    { id: uid(), ticker:'WKL', name:'Wolters Kluwer', stage:'watchlist', score:0, pe:0, dr:'YES',
+    { id: uid(), ticker:'WKL', name:'Wolters Kluwer', stage:'watchlist', yTicker:'WKL.AS', score:84, pe:32.5, dr:'YES',
       reason:'Initially looked elite. Rating revised down due to AI moat compression risk in legal/tax/professional information workflows.',
       trigger:'AI risk resolves or moat holds visibly through 2-3 earnings cycles. T1: EUR 63-72, T2: EUR 52-61.', reviewed: today() },
-    { id: uid(), ticker:'MUP', name:'M-Up Holdings', stage:'watchlist', score:0, pe:0, dr:'NEUTRAL',
+    { id: uid(), ticker:'MUP', name:'M-Up Holdings', stage:'watchlist', yTicker:'3661.T', score:75, pe:18.4, dr:'NEUTRAL',
       reason:'Moved to secondary watchlist when Scout24 emerged as cleaner, less discretionary, more macro-resilient alternative. More exposed to fan spending and artist cycles.',
       trigger:'Scout24 degrades significantly or M-Up diversification strengthens substantially.', reviewed: today() },
-    { id: uid(), ticker:'ANYCOLOR', name:'Anycolor', stage:'rejected', score:0, pe:0, dr:'NO',
+    { id: uid(), ticker:'6532', name:'BayCurrent', stage:'watchlist', yTicker:'6532.T', score:77, pe:20.4, dr:'NEUTRAL',
+      reason:'Japan IT consulting leader. Score 77 vs KSPI 78 — same tier. P/E 20× vs KSPI 7× — valuation gap too wide to justify replacement. Strong business but not a clean compounder.',
+      trigger:'P/E compresses to ¥3,200-3,800 (T2, ~13-15× P/E) — quality-adjusted valuation becomes compelling.', reviewed: today() },
+    { id: uid(), ticker:'ANYCOLOR', name:'Anycolor', stage:'rejected', yTicker:'5032.T', score:72, pe:21.5, dr:'NO',
       reason:'Removed from main picks. Strong current growth and economics, but scored lower on predictability, revenue durability, and resilience under updated framework.',
       trigger:'Framework update or business model shift improving predictability and durability.', reviewed: today() },
   ];
@@ -1572,6 +1575,8 @@ async function refreshPortfolioPrices() {
   try {
     const portfolio = load('portfolio');
     const tickers = portfolio.filter(p => p.yTicker).map(p => p.yTicker);
+    const watchlistItems = load('pipeline').filter(p => p.yTicker);
+    const watchlistTickers = watchlistItems.map(p => p.yTicker);
 
     // Multi-strategy price fetch — try Stooq via CORS proxies, fallback to Yahoo via proxies
     function toStooq(ticker) {
@@ -1579,12 +1584,13 @@ async function refreshPortfolioPrices() {
         'FLOW.AS': 'flow.nl', 'FXPO.L': 'fxpo.uk',
         'YRD': 'yrd.us', 'JFIN': 'jfin.us', 'OMSE': 'omse.us', 'XYF': 'xyf.us',
         '3923.T': '3923.jp', '1INN.DE': '1inn.de', 'G24.DE': 'g24.de',
+        'NEM.DE': 'nem.de', 'WKL.AS': 'wkl.nl', '3661.T': '3661.jp', '6532.T': '6532.jp', '5032.T': '5032.jp',
         'EURUSD=X': 'eurusd', 'EURJPY=X': 'eurjpy', 'GBPEUR=X': 'gbpeur',
       };
       return map[ticker] || ticker.toLowerCase();
     }
 
-    const allSymbols = [...tickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'];
+    const allSymbols = [...new Set([...tickers, ...watchlistTickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'])];
     const priceMap = {};
 
     // Try Stooq first via CORS proxy
@@ -1659,8 +1665,24 @@ async function refreshPortfolioPrices() {
     });
 
     save('portfolio', portfolio);
+
+    // Update watchlist P/E ratios from fetched prices
+    // Note: Stooq returns prices, not P/E. We'd need EPS to calculate P/E precisely.
+    // For now we update the price reference but P/E stays as last-known.
+    // Actually we can store currentPrice on watchlist items so users see live valuation
+    const pipeline = load('pipeline');
+    pipeline.forEach(p => {
+      if (p.yTicker && priceMap[p.yTicker]) {
+        p.currentPrice = priceMap[p.yTicker];
+      }
+    });
+    save('pipeline', pipeline);
+
     renderPortfolio();
     renderDashboard();  // refresh top KPIs (FLOW % etc)
+    if (document.getElementById('page-pipeline')?.classList.contains('active')) {
+      renderPipeline();
+    }
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
@@ -2162,12 +2184,12 @@ function saveReplaceFlag(id, val) {
    ============================================================ */
 function renderPipeline() {
   const pipeline = load('pipeline');
-  const stages = ['first-pass','deep-review','rated','watchlist','rejected'];
+  const stages = ['watchlist','rejected'];
   const counts = {};
   stages.forEach(s=>{ counts[s]=pipeline.filter(p=>p.stage===s).length; });
 
   document.getElementById('pipeline-kpis').innerHTML = stages.map(s=>`
-    <div class="card span-2" style="padding:12px 14px;">
+    <div class="card" style="padding:14px 18px;flex:1;max-width:240px;">
       <div class="kpi-val" style="font-size:24px;">${counts[s]}</div>
       <div class="kpi-label">${s.replace('-',' ').toUpperCase()}</div>
     </div>`).join('').replace(/span-2/g,'');
