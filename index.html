@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.4';
+const DATA_VERSION = '3.5';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1589,7 +1589,7 @@ async function refreshPortfolioPrices() {
     const allSymbols = [...new Set([...tickers, ...watchlistTickers, ...candidateTickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'])];
     const symbolStr = allSymbols.join(',');
 
-    const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}`;
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(symbolStr)}&range=1d&interval=1d`;
 
     const proxies = [
       'https://corsproxy.io/?',
@@ -1604,9 +1604,18 @@ async function refreshPortfolioPrices() {
         const resp = await fetch(url);
         if (!resp.ok) { lastErr = 'HTTP ' + resp.status; continue; }
         const data = await resp.json();
-        if (data?.quoteResponse?.result) {
-          quotes = data.quoteResponse.result;
-          break;
+        // Spark endpoint returns: { SYMBOL: { close: [...], timestamp: [...] }, ... }
+        if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+          quotes = [];
+          for (const [sym, info] of Object.entries(data)) {
+            if (info && info.close && info.close.length) {
+              const lastClose = info.close[info.close.length - 1];
+              if (lastClose && !isNaN(lastClose)) {
+                quotes.push({ symbol: sym, regularMarketPrice: lastClose, trailingPE: null });
+              }
+            }
+          }
+          if (quotes.length > 0) break;
         }
       } catch(e) { lastErr = e.message; continue; }
     }
