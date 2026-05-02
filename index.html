@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.2';
+const DATA_VERSION = '3.3';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1578,62 +1578,79 @@ async function refreshPortfolioPrices() {
     const watchlistItems = load('pipeline').filter(p => p.yTicker);
     const watchlistTickers = watchlistItems.map(p => p.yTicker);
 
-    // Multi-strategy price fetch — try Stooq via CORS proxies, fallback to Yahoo via proxies
-    function toStooq(ticker) {
-      const map = {
-        'FLOW.AS': 'flow.nl', 'FXPO.L': 'fxpo.uk',
-        'YRD': 'yrd.us', 'JFIN': 'jfin.us', 'OMSE': 'omse.us', 'XYF': 'xyf.us',
-        '3923.T': '3923.jp', '1INN.DE': '1inn.de', 'G24.DE': 'g24.de',
-        'NEM.DE': 'nem.de', 'WKL.AS': 'wkl.nl', '3661.T': '3661.jp', '6532.T': '6532.jp', '5032.T': '5032.jp',
-        'EURUSD=X': 'eurusd', 'EURJPY=X': 'eurjpy', 'GBPEUR=X': 'gbpeur',
-      };
-      return map[ticker] || ticker.toLowerCase();
-    }
-
+    // Yahoo Finance via CORS proxies — returns price AND P/E in one call
     const allSymbols = [...new Set([...tickers, ...watchlistTickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'])];
-    const priceMap = {};
+    const symbolStr = allSymbols.join(',');
 
-    // Try Stooq first via CORS proxy
-    async function tryStooq(yTicker) {
-      const stooqSym = toStooq(yTicker);
-      const directUrl = `https://stooq.com/q/l/?s=${stooqSym}&f=sd2t2ohlcv&h&e=csv`;
-      const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(directUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`,
-      ];
-      for (const url of proxies) {
-        try {
-          const resp = await fetch(url);
-          if (!resp.ok) continue;
-          const text = await resp.text();
-          const lines = text.trim().split('\n');
-          if (lines.length < 2) continue;
-          const cols = lines[1].split(',');
-          const close = parseFloat(cols[6]);
-          if (!isNaN(close) && close > 0) return close;
-        } catch(e) { continue; }
-      }
-      return null;
+    const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}`;
+
+    const proxies = [
+      'https://corsproxy.io/?',
+      'https://api.allorigins.win/raw?url=',
+    ];
+
+    let quotes = null;
+    let lastErr = null;
+    for (const proxy of proxies) {
+      try {
+        const url = proxy + encodeURIComponent(yahooUrl);
+        const resp = await fetch(url);
+        if (!resp.ok) { lastErr = 'HTTP ' + resp.status; continue; }
+        const data = await resp.json();
+        if (data?.quoteResponse?.result) {
+          quotes = data.quoteResponse.result;
+          break;
+        }
+      } catch(e) { lastErr = e.message; continue; }
     }
 
-    // Fetch all symbols in parallel
-    const results = await Promise.all(allSymbols.map(async sym => {
-      const price = await tryStooq(sym);
-      return [sym, price];
-    }));
-    results.forEach(([sym, price]) => {
-      if (price !== null) priceMap[sym] = price;
+    // Stooq fallback for prices only — if Yahoo failed entirely
+    if (!quotes) {
+      function toStooq(ticker) {
+        const m = {
+          'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','YRD':'yrd.us','JFIN':'jfin.us',
+          'OMSE':'omse.us','XYF':'xyf.us','3923.T':'3923.jp','1INN.DE':'1inn.de','G24.DE':'g24.de',
+          'NEM.DE':'nem.de','WKL.AS':'wkl.nl','3661.T':'3661.jp','6532.T':'6532.jp','5032.T':'5032.jp',
+          'EURUSD=X':'eurusd','EURJPY=X':'eurjpy','GBPEUR=X':'gbpeur',
+        };
+        return m[ticker] || ticker.toLowerCase();
+      }
+      async function fetchStooq(yT) {
+        const sym = toStooq(yT);
+        const direct = `https://stooq.com/q/l/?s=${sym}&f=sd2t2ohlcv&h&e=csv`;
+        for (const proxy of proxies) {
+          try {
+            const r = await fetch(proxy + encodeURIComponent(direct));
+            if (!r.ok) continue;
+            const t = await r.text();
+            const lines = t.trim().split('\n');
+            if (lines.length < 2) continue;
+            const close = parseFloat(lines[1].split(',')[6]);
+            if (!isNaN(close) && close > 0) return close;
+          } catch(e) { continue; }
+        }
+        return null;
+      }
+      const fbResults = await Promise.all(allSymbols.map(async sym => {
+        const px = await fetchStooq(sym);
+        return px ? { symbol: sym, regularMarketPrice: px, trailingPE: null } : null;
+      }));
+      quotes = fbResults.filter(Boolean);
+    }
+
+    if (!quotes || quotes.length === 0) {
+      throw new Error('All proxies blocked: ' + (lastErr || 'unknown'));
+    }
+
+    // Build maps for both price and PE
+    const priceMap = {};
+    const peMap = {};
+    quotes.forEach(q => {
+      priceMap[q.symbol] = q.regularMarketPrice;
+      if (q.trailingPE) peMap[q.symbol] = q.trailingPE;
     });
 
-    if (Object.keys(priceMap).length === 0) {
-      throw new Error('All proxies blocked. Try in 1 minute or check network.');
-    }
 
-    const quotes = Object.entries(priceMap).map(([symbol, price]) => ({
-      symbol, regularMarketPrice: price
-    }));
-
-    // priceMap already built from Stooq fetch above
 
     // FX rates (EUR base)
     const usdPerEur = priceMap['EURUSD=X'] || 1.08;  // fallback
@@ -1655,6 +1672,7 @@ async function refreshPortfolioPrices() {
       const nativePrice = priceMap[p.yTicker];
       p.currentPrice = nativePrice;
       p.currentValue = toEur(nativePrice, p.currency) * p.shares;
+      if (peMap[p.yTicker]) p.peNow = peMap[p.yTicker];
       updatedCount++;
     });
 
@@ -1675,8 +1693,25 @@ async function refreshPortfolioPrices() {
       if (p.yTicker && priceMap[p.yTicker]) {
         p.currentPrice = priceMap[p.yTicker];
       }
+      if (p.yTicker && peMap[p.yTicker]) {
+        p.pe = parseFloat(peMap[p.yTicker].toFixed(1));
+      }
     });
     save('pipeline', pipeline);
+
+    // Also update candidate stocks P/E
+    const stocks = load('stocks');
+    const candidateMap = {
+      'MEDI':'MEDIQ.OL','3923':'3923.T','1INN':'1INN.DE','G24':'G24.DE',
+      '3769':'3769.T','KSPI':'KSPI','XYF':'XYF','OMSE':'OMSE','FLOW':'FLOW.AS'
+    };
+    stocks.forEach(s => {
+      const yT = candidateMap[s.ticker];
+      if (yT && peMap[yT]) {
+        s.pe = parseFloat(peMap[yT].toFixed(1));
+      }
+    });
+    save('stocks', stocks);
 
     renderPortfolio();
     renderDashboard();  // refresh top KPIs (FLOW % etc)
