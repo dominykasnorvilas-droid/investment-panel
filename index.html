@@ -2628,10 +2628,24 @@ function renderReview() {
             ${breakLines}
           </div>
 
-          ${r.full_analysis ? `<div class="section-label" style="margin-bottom:8px;">BUSINESS ANALYSIS</div>
-          <div style="font-size:13px;color:var(--text2);line-height:1.85;white-space:pre-line;">${r.full_analysis}</div>` : ''}
+
         </div>
       </div>
+
+      <!-- FULL WIDTH BUSINESS ANALYSIS -->
+      ${r.full_analysis ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.08em;margin-bottom:16px;">BUSINESS ANALYSIS</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.9;">
+          ${r.full_analysis.split('\n\n').map(para => {
+            if (!para.trim()) return '';
+            // Section headers (all caps lines)
+            if (para.trim() === para.trim().toUpperCase() && para.trim().length < 60 && !para.includes('.')) {
+              return '<div style="font-size:10px;font-weight:700;color:var(--accent);font-family:var(--font-mono);letter-spacing:0.1em;margin:20px 0 8px;">' + para.trim() + '</div>';
+            }
+            return '<p style="margin-bottom:12px;">' + para.trim() + '</p>';
+          }).join('')}
+        </div>
+      </div>` : ''}
 
       <!-- REPLACEMENT ANALYSIS -->
       ${r.replace_analysis ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
