@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.5';
+const DATA_VERSION = '3.6';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1578,7 +1578,6 @@ async function refreshPortfolioPrices() {
     const watchlistItems = load('pipeline').filter(p => p.yTicker);
     const watchlistTickers = watchlistItems.map(p => p.yTicker);
 
-    // Yahoo Finance via CORS proxies — returns price AND P/E in one call
     // Build candidate yTickers too
     const candidateMap = {
       'MEDI':'MEDIQ.OL','3923':'3923.T','1INN':'1INN.DE','G24':'G24.DE',
@@ -1587,84 +1586,62 @@ async function refreshPortfolioPrices() {
     };
     const candidateTickers = load('stocks').map(s => candidateMap[s.ticker]).filter(Boolean);
     const allSymbols = [...new Set([...tickers, ...watchlistTickers, ...candidateTickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'])];
-    const symbolStr = allSymbols.join(',');
 
-    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(symbolStr)}&range=1d&interval=1d`;
+    // Stooq-first: confirmed working from previous tests
+    function toStooq(ticker) {
+      const m = {
+        'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','YRD':'yrd.us','JFIN':'jfin.us',
+        'OMSE':'omse.us','XYF':'xyf.us','3923.T':'3923.jp','1INN.DE':'1inn.de','G24.DE':'g24.de',
+        'NEM.DE':'nem.de','WKL.AS':'wkl.nl','3661.T':'3661.jp','6532.T':'6532.jp','5032.T':'5032.jp',
+        'MEDIQ.OL':'mediq.no','3769.T':'3769.jp','KSPI':'kspi.us',
+        'EURUSD=X':'eurusd','EURJPY=X':'eurjpy','GBPEUR=X':'gbpeur',
+      };
+      return m[ticker] || ticker.toLowerCase();
+    }
 
     const proxies = [
       'https://corsproxy.io/?',
       'https://api.allorigins.win/raw?url=',
     ];
 
-    let quotes = null;
-    let lastErr = null;
-    for (const proxy of proxies) {
-      try {
-        const url = proxy + encodeURIComponent(yahooUrl);
-        const resp = await fetch(url);
-        if (!resp.ok) { lastErr = 'HTTP ' + resp.status; continue; }
-        const data = await resp.json();
-        // Spark endpoint returns: { SYMBOL: { close: [...], timestamp: [...] }, ... }
-        if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-          quotes = [];
-          for (const [sym, info] of Object.entries(data)) {
-            if (info && info.close && info.close.length) {
-              const lastClose = info.close[info.close.length - 1];
-              if (lastClose && !isNaN(lastClose)) {
-                quotes.push({ symbol: sym, regularMarketPrice: lastClose, trailingPE: null });
-              }
-            }
-          }
-          if (quotes.length > 0) break;
-        }
-      } catch(e) { lastErr = e.message; continue; }
-    }
-
-    // Stooq fallback for prices only — if Yahoo failed entirely
-    if (!quotes) {
-      function toStooq(ticker) {
-        const m = {
-          'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','YRD':'yrd.us','JFIN':'jfin.us',
-          'OMSE':'omse.us','XYF':'xyf.us','3923.T':'3923.jp','1INN.DE':'1inn.de','G24.DE':'g24.de',
-          'NEM.DE':'nem.de','WKL.AS':'wkl.nl','3661.T':'3661.jp','6532.T':'6532.jp','5032.T':'5032.jp',
-          'EURUSD=X':'eurusd','EURJPY=X':'eurjpy','GBPEUR=X':'gbpeur',
-        };
-        return m[ticker] || ticker.toLowerCase();
+    async function fetchStooq(yT) {
+      const sym = toStooq(yT);
+      const direct = `https://stooq.com/q/l/?s=${sym}&f=sd2t2ohlcv&h&e=csv`;
+      for (const proxy of proxies) {
+        try {
+          const r = await fetch(proxy + encodeURIComponent(direct));
+          if (!r.ok) continue;
+          const t = await r.text();
+          const lines = t.trim().split('\n');
+          if (lines.length < 2) continue;
+          const close = parseFloat(lines[1].split(',')[6]);
+          if (!isNaN(close) && close > 0) return close;
+        } catch(e) { continue; }
       }
-      async function fetchStooq(yT) {
-        const sym = toStooq(yT);
-        const direct = `https://stooq.com/q/l/?s=${sym}&f=sd2t2ohlcv&h&e=csv`;
-        for (const proxy of proxies) {
-          try {
-            const r = await fetch(proxy + encodeURIComponent(direct));
-            if (!r.ok) continue;
-            const t = await r.text();
-            const lines = t.trim().split('\n');
-            if (lines.length < 2) continue;
-            const close = parseFloat(lines[1].split(',')[6]);
-            if (!isNaN(close) && close > 0) return close;
-          } catch(e) { continue; }
-        }
-        return null;
-      }
-      const fbResults = await Promise.all(allSymbols.map(async sym => {
-        const px = await fetchStooq(sym);
-        return px ? { symbol: sym, regularMarketPrice: px, trailingPE: null } : null;
-      }));
-      quotes = fbResults.filter(Boolean);
+      return null;
     }
 
-    if (!quotes || quotes.length === 0) {
-      throw new Error('All proxies blocked: ' + (lastErr || 'unknown'));
-    }
+    console.log('[Refresh] Fetching', allSymbols.length, 'symbols via Stooq');
+    const results = await Promise.all(allSymbols.map(async sym => {
+      const px = await fetchStooq(sym);
+      return [sym, px];
+    }));
 
-    // Build maps for both price and PE
     const priceMap = {};
     const peMap = {};
-    quotes.forEach(q => {
-      priceMap[q.symbol] = q.regularMarketPrice;
-      if (q.trailingPE) peMap[q.symbol] = q.trailingPE;
+    let fetchedCount = 0;
+    results.forEach(([sym, px]) => {
+      if (px !== null) {
+        priceMap[sym] = px;
+        fetchedCount++;
+      }
     });
+
+    console.log('[Refresh] Got', fetchedCount, 'of', allSymbols.length, 'prices');
+
+    if (fetchedCount === 0) {
+      throw new Error('All proxies blocked. Try in 1-2 minutes.');
+    }
 
 
 
