@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.6';
+const DATA_VERSION = '3.7';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1578,7 +1578,22 @@ async function refreshPortfolioPrices() {
     const watchlistItems = load('pipeline').filter(p => p.yTicker);
     const watchlistTickers = watchlistItems.map(p => p.yTicker);
 
-    // Build candidate yTickers too
+    // ── Twelve Data API for P/E ratios (live) ─────────────────────────
+    // Free tier: 800 requests/day, 8 requests/min
+    const TWELVE_KEY = '866ce711627e4605a51678b11c7a68f0';
+
+    // Map our internal Yahoo-style tickers → Twelve Data symbols
+    function toTwelve(yTicker) {
+      const m = {
+        'FLOW.AS':'FLOW.AS','FXPO.L':'FXPO.LON','YRD':'YRD','JFIN':'JFIN','OMSE':'OMSE','XYF':'XYF',
+        '3923.T':'3923.TYO','1INN.DE':'1INN.XETRA','G24.DE':'G24.XETRA',
+        '3769.T':'3769.TYO','KSPI':'KSPI','MEDIQ.OL':'MEDIQ.Oslo',
+        'NEM.DE':'NEM.XETRA','WKL.AS':'WKL.AS','3661.T':'3661.TYO','6532.T':'6532.TYO','5032.T':'5032.TYO',
+      };
+      return m[yTicker] || yTicker;
+    }
+
+        // Build candidate yTickers too
     const candidateMap = {
       'MEDI':'MEDIQ.OL','3923':'3923.T','1INN':'1INN.DE','G24':'G24.DE',
       '3769':'3769.T','KSPI':'KSPI','XYF':'XYF','OMSE':'OMSE','FLOW':'FLOW.AS',
@@ -1628,7 +1643,6 @@ async function refreshPortfolioPrices() {
     }));
 
     const priceMap = {};
-    const peMap = {};
     let fetchedCount = 0;
     results.forEach(([sym, px]) => {
       if (px !== null) {
@@ -1642,6 +1656,48 @@ async function refreshPortfolioPrices() {
     if (fetchedCount === 0) {
       throw new Error('All proxies blocked. Try in 1-2 minutes.');
     }
+
+    // Fetch P/E ratios from Twelve Data (in batches to respect rate limits)
+    const peTickers = [...new Set([...tickers, ...watchlistTickers, ...candidateTickers])]
+      .filter(t => !t.includes('=X'));  // skip FX
+
+    // Batch in groups of 5 to stay under rate limit
+    const peMap = {};
+    let peUpdated = 0;
+
+    async function fetchTwelvePE(yT) {
+      const tdSym = toTwelve(yT);
+      try {
+        const url = `https://api.twelvedata.com/statistics?symbol=${encodeURIComponent(tdSym)}&apikey=${TWELVE_KEY}`;
+        const r = await fetch(url);
+        if (!r.ok) return null;
+        const d = await r.json();
+        const pe = d?.statistics?.valuations_metrics?.trailing_pe ||
+                   d?.statistics?.valuations_metrics?.pe_ratio_ttm;
+        return pe ? parseFloat(pe) : null;
+      } catch(e) { return null; }
+    }
+
+    // Process in batches of 5 (8/min limit on free tier with safety margin)
+    const batchSize = 5;
+    for (let i = 0; i < peTickers.length; i += batchSize) {
+      const batch = peTickers.slice(i, i + batchSize);
+      const peResults = await Promise.all(batch.map(async t => {
+        const pe = await fetchTwelvePE(t);
+        return [t, pe];
+      }));
+      peResults.forEach(([t, pe]) => {
+        if (pe !== null && pe > 0 && pe < 500) {
+          peMap[t] = pe;
+          peUpdated++;
+        }
+      });
+      // Brief pause between batches to respect rate limit
+      if (i + batchSize < peTickers.length) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+    console.log('[Refresh] P/E updated for', peUpdated, '/', peTickers.length, 'tickers');
 
 
 
