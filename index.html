@@ -1447,15 +1447,15 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
         buyPrice:0.98, currentPrice:0.32, pl:-30288, plPct:-67.31,
         peNow:null, portfolioPct:6.86, purchaseDate:'—', notes:'Ukrainian mining. Separate from candidates list.' },
       { id: uid(), ticker:'XYF', name:'X Financial', country:'CN', industry:'Consumer Finance',
-        currency:'EUR', invested:22400, currentValue:14636, shares:3630,
+        currency:'USD', invested:22400, currentValue:14636, shares:3630,
         buyPrice:11.61, currentPrice:4.72, pl:-7763, plPct:-34.66,
         peNow:1.05, portfolioPct:6.82, purchaseDate:'2025-04-29 / 2025-10-29', notes:'Two tranches. Attack / signal-driven. Awaiting YRD signal confirmation.' },
       { id: uid(), ticker:'OMSE', name:'OMSE', country:'SG', industry:'Energy Equipment Services',
-        currency:'EUR', invested:5750, currentValue:2793, shares:700,
+        currency:'USD', invested:5750, currentValue:2793, shares:700,
         buyPrice:9.41, currentPrice:4.67, pl:-2957, plPct:-51.43,
         peNow:3.76, portfolioPct:1.30, purchaseDate:'2025-05-29', notes:'Attack / cyclical deep value.' },
       { id: uid(), ticker:'3923', name:'Rakus', country:'JP', industry:'SaaS',
-        currency:'EUR', invested:6050, currentValue:6883, shares:1500,
+        currency:'JPY', invested:6050, currentValue:6883, shares:1500,
         buyPrice:752.09, currentPrice:857, pl:833, plPct:13.76,
         peNow:24.97, portfolioPct:3.21, purchaseDate:'2026-04-13', notes:'Core compounder. Starter position.' },
       { id: uid(), ticker:'1INN', name:'Innoscripta AG', country:'DE', industry:'SaaS / Tax Accounting',
@@ -1594,7 +1594,11 @@ function renderPortfolio() {
       <td style="font-weight:600;">${p.name}</td>
       <td><span class="badge badge-pipeline" style="font-size:11px;">${p.country}</span></td>
       <td class="td-mono">${p.shares ? p.shares.toLocaleString() : '—'}</td>
-      <td class="td-mono">${p.currentPrice ? (p.currency==='JPY' ? '¥'+p.currentPrice.toLocaleString() : '€'+p.currentPrice.toFixed(2)) : '—'}</td>
+      <td class="td-mono">${p.currentPrice ? (
+        p.currency==='JPY' ? '¥'+p.currentPrice.toLocaleString() :
+        p.currency==='USD' ? '$'+p.currentPrice.toFixed(2) :
+        '€'+p.currentPrice.toFixed(2)
+      ) : '—'}</td>
       <td class="td-mono" style="font-weight:600;">€${Math.round(p.currentValue).toLocaleString()}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;">
