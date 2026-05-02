@@ -736,7 +736,13 @@ label {
     <!-- PORTFOLIO SECTION -->
     <div class="card" style="margin-bottom:20px;" id="portfolio-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-        <div class="card-title" style="margin-bottom:0;">Live Portfolio</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="card-title" style="margin-bottom:0;">Live Portfolio</div>
+          <button class="btn btn-sm" id="refresh-portfolio-btn" onclick="refreshPortfolioPrices()" title="Fetch latest prices and FX rates">
+            ↺ Refresh Prices
+          </button>
+          <span id="portfolio-last-updated" style="font-size:11px;color:var(--muted);font-family:var(--font-mono);"></span>
+        </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;" id="portfolio-kpis"></div>
       </div>
       <div class="table-wrap">
@@ -1439,33 +1445,33 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
   if (load('portfolio').length === 0) {
     const portfolio = [
       { id: uid(), ticker:'FLOW', name:'FLOW', country:'NL', industry:'Market Making / Volatility',
-        currency:'EUR', invested:173000, currentValue:180972, shares:6600,
-        buyPrice:25.92, currentPrice:27.42, pl:7972, plPct:4.61,
-        peNow:8.54, portfolioPct:84.33, purchaseDate:'—', notes:'Core strategy engine. Largest position.' },
+        currency:'EUR', yTicker:'FLOW.AS', invested:173000, currentValue:180972, shares:6600,
+        buyPrice:25.92, currentPrice:27.42, peNow:8.54, purchaseDate:'—',
+        notes:'Core strategy engine. Largest position.' },
       { id: uid(), ticker:'UA-MINE', name:'UA Mining Position', country:'UA', industry:'Metals & Mining',
-        currency:'EUR', invested:45000, currentValue:14712, shares:45976,
-        buyPrice:0.98, currentPrice:0.32, pl:-30288, plPct:-67.31,
-        peNow:null, portfolioPct:6.86, purchaseDate:'—', notes:'Ukrainian mining. Separate from candidates list.' },
+        currency:'EUR', yTicker:null, invested:45000, currentValue:14712, shares:45976,
+        buyPrice:0.98, currentPrice:0.32, peNow:null, purchaseDate:'—',
+        notes:'Ukrainian mining. Separate from candidates list.' },
       { id: uid(), ticker:'XYF', name:'X Financial', country:'CN', industry:'Consumer Finance',
-        currency:'USD', invested:22400, currentValue:14636, shares:3630,
-        buyPrice:11.61, currentPrice:4.72, pl:-7763, plPct:-34.66,
-        peNow:1.05, portfolioPct:6.82, purchaseDate:'2025-04-29 / 2025-10-29', notes:'Two tranches. Attack / signal-driven. Awaiting YRD signal confirmation.' },
+        currency:'USD', yTicker:'XYF', invested:22400, currentValue:14636, shares:3630,
+        buyPrice:11.61, currentPrice:4.72, peNow:1.05, purchaseDate:'2025-04-29 / 2025-10-29',
+        notes:'Two tranches. Attack / signal-driven. Awaiting YRD signal confirmation.' },
       { id: uid(), ticker:'OMSE', name:'OMSE', country:'SG', industry:'Energy Equipment Services',
-        currency:'USD', invested:5750, currentValue:2793, shares:700,
-        buyPrice:9.41, currentPrice:4.67, pl:-2957, plPct:-51.43,
-        peNow:3.76, portfolioPct:1.30, purchaseDate:'2025-05-29', notes:'Attack / cyclical deep value.' },
+        currency:'USD', yTicker:'OMSE', invested:5750, currentValue:2793, shares:700,
+        buyPrice:9.41, currentPrice:4.67, peNow:3.76, purchaseDate:'2025-05-29',
+        notes:'Attack / cyclical deep value.' },
       { id: uid(), ticker:'3923', name:'Rakus', country:'JP', industry:'SaaS',
-        currency:'JPY', invested:6050, currentValue:6883, shares:1500,
-        buyPrice:752.09, currentPrice:857, pl:833, plPct:13.76,
-        peNow:24.97, portfolioPct:3.21, purchaseDate:'2026-04-13', notes:'Core compounder. Starter position.' },
+        currency:'JPY', yTicker:'3923.T', invested:6050, currentValue:6883, shares:1500,
+        buyPrice:752.09, currentPrice:857, peNow:24.97, purchaseDate:'2026-04-13',
+        notes:'Core compounder. Starter position.' },
       { id: uid(), ticker:'1INN', name:'Innoscripta AG', country:'DE', industry:'SaaS / Tax Accounting',
-        currency:'EUR', invested:5550, currentValue:5480, shares:80,
-        buyPrice:69.40, currentPrice:68.50, pl:-70, plPct:-1.26,
-        peNow:16.92, portfolioPct:2.55, purchaseDate:'2026-04-23', notes:'Core compounder. Starter position.' },
+        currency:'EUR', yTicker:'1INN.DE', invested:5550, currentValue:5480, shares:80,
+        buyPrice:69.40, currentPrice:68.50, peNow:16.92, purchaseDate:'2026-04-23',
+        notes:'Core compounder. Starter position.' },
       { id: uid(), ticker:'G24', name:'Scout24 SE', country:'DE', industry:'Digital Real Estate',
-        currency:'EUR', invested:4100, currentValue:4260, shares:60,
-        buyPrice:68.45, currentPrice:71.00, pl:160, plPct:3.90,
-        peNow:19.96, portfolioPct:1.98, purchaseDate:'2026-04-28', notes:'Core compounder. Starter position.' },
+        currency:'EUR', yTicker:'G24.DE', invested:4100, currentValue:4260, shares:60,
+        buyPrice:68.45, currentPrice:71.00, peNow:19.96, purchaseDate:'2026-04-28',
+        notes:'Core compounder. Starter position.' },
     ];
     save('portfolio', portfolio);
   }
@@ -1542,6 +1548,80 @@ function renderPage(name) {
 /* ============================================================
    DASHBOARD
    ============================================================ */
+async function refreshPortfolioPrices() {
+  const btn = document.getElementById('refresh-portfolio-btn');
+  const statusEl = document.getElementById('portfolio-last-updated');
+  btn.textContent = '⟳ Fetching...';
+  btn.disabled = true;
+  statusEl.textContent = '';
+
+  try {
+    const portfolio = load('portfolio');
+    const tickers = portfolio.filter(p => p.yTicker).map(p => p.yTicker);
+
+    // Yahoo Finance v8 chart endpoint — CORS-friendly
+    // Fetch USD/EUR and JPY/EUR rates too
+    const allSymbols = [...tickers, 'EURUSD=X', 'EURJPY=X'];
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${allSymbols.join(',')}&fields=regularMarketPrice,currency`;
+
+    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!resp.ok) throw new Error('Yahoo Finance returned ' + resp.status);
+
+    const data = await resp.json();
+    const quotes = data.quoteResponse?.result || [];
+
+    // Build price map
+    const priceMap = {};
+    quotes.forEach(q => { priceMap[q.symbol] = q.regularMarketPrice; });
+
+    // FX rates (EUR base)
+    const usdPerEur = priceMap['EURUSD=X'] || 1.08;  // fallback
+    const jpyPerEur = priceMap['EURJPY=X'] || 162;
+
+    function toEur(price, currency) {
+      if (currency === 'EUR') return price;
+      if (currency === 'USD') return price / usdPerEur;
+      if (currency === 'JPY') return price / jpyPerEur;
+      return price;
+    }
+
+    // Update portfolio positions
+    let updatedCount = 0;
+    portfolio.forEach(p => {
+      if (!p.yTicker || !priceMap[p.yTicker]) return;
+      const nativePrice = priceMap[p.yTicker];
+      p.currentPrice = nativePrice;
+      p.currentValue = toEur(nativePrice, p.currency) * p.shares;
+      updatedCount++;
+    });
+
+    // Recalculate portfolio %
+    const totalStockVal = portfolio.reduce((s, p) => s + (p.currentValue || 0), 0);
+    portfolio.forEach(p => {
+      p.portfolioPct = totalStockVal > 0 ? (p.currentValue / totalStockVal) * 100 : 0;
+    });
+
+    save('portfolio', portfolio);
+    renderPortfolio();
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    statusEl.textContent = `Updated ${timeStr} · ${updatedCount}/${tickers.length} prices fetched`;
+    statusEl.style.color = 'var(--accent)';
+
+    showToast(`Portfolio updated — ${updatedCount} prices refreshed`);
+
+  } catch(e) {
+    console.error('Portfolio refresh error:', e);
+    statusEl.textContent = 'Failed: ' + e.message;
+    statusEl.style.color = 'var(--red)';
+    showToast('Price fetch failed — try again or check console');
+  } finally {
+    btn.textContent = '↺ Refresh Prices';
+    btn.disabled = false;
+  }
+}
+
 function renderPortfolio() {
   const portfolio = load('portfolio');
   if (!portfolio || portfolio.length === 0) return;
