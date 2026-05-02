@@ -721,9 +721,7 @@ label {
         <div class="page-subtitle">FLOW-COMPOUNDER ROTATION FRAMEWORK</div>
       </div>
       <div class="header-actions">
-        <button class="btn btn-accent btn-sm" onclick="openAddStock()">+ Add Stock</button>
-        <button class="btn btn-sm" onclick="showPage('compare')">⇔ Compare</button>
-        <button class="btn btn-sm" onclick="forceReset()" style="color:var(--red);border-color:rgba(240,80,80,0.3);" title="Reset all data to defaults">↺ Reset Data</button>
+        <button class="btn btn-accent btn-sm" onclick="refreshAll()" id="main-refresh-btn">↺ Refresh</button>
       </div>
     </div>
 
@@ -3130,6 +3128,20 @@ function copyPrompt() {
 /* ============================================================
    INIT
    ============================================================ */
+async function refreshAll() {
+  const btn = document.getElementById('main-refresh-btn');
+  btn.textContent = '⟳ Refreshing...';
+  btn.disabled = true;
+  try {
+    await refreshPortfolioPrices();
+  } catch(e) {
+    showToast('Price refresh failed — ' + e.message);
+  } finally {
+    btn.textContent = '↺ Refresh';
+    btn.disabled = false;
+  }
+}
+
 function forceReset() {
   if (!confirm('This will clear all local data and restore the default candidates. Any custom edits will be lost. Continue?')) return;
   Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
