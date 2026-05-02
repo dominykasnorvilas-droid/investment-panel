@@ -1660,6 +1660,7 @@ async function refreshPortfolioPrices() {
 
     save('portfolio', portfolio);
     renderPortfolio();
+    renderDashboard();  // refresh top KPIs (FLOW % etc)
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
