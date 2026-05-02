@@ -736,9 +736,6 @@ label {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;align-items:center;gap:12px;">
           <div class="card-title" style="margin-bottom:0;">Live Portfolio</div>
-          <button class="btn btn-sm" id="refresh-portfolio-btn" onclick="refreshPortfolioPrices()" title="Fetch latest prices and FX rates">
-            ↺ Refresh Prices
-          </button>
           <span id="portfolio-last-updated" style="font-size:11px;color:var(--muted);font-family:var(--font-mono);"></span>
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;" id="portfolio-kpis"></div>
@@ -1231,25 +1228,31 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '2.6';
+const DATA_VERSION = '2.7';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
     if (storedVersion !== DATA_VERSION) {
-      console.log('[Panel] Data version mismatch (' + storedVersion + ' → ' + DATA_VERSION + ') — resetting');
-      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      // Nuclear option: clear everything isp_ related
+      const keys = Object.keys(localStorage);
+      keys.forEach(k => { if (k.startsWith('isp_') || k === 'isp_version') localStorage.removeItem(k); });
       localStorage.setItem('isp_version', DATA_VERSION);
+      console.log('[Panel] Cleared localStorage — version', DATA_VERSION);
+      return;
     }
+    // Also check stocks integrity
     const raw = localStorage.getItem('isp_stocks');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].ticker || !parsed[0].name) {
-        Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      if (!Array.isArray(parsed) || parsed.length < 5) {
+        const keys = Object.keys(localStorage);
+        keys.forEach(k => { if (k.startsWith('isp_') || k === 'isp_version') localStorage.removeItem(k); });
         localStorage.setItem('isp_version', DATA_VERSION);
       }
     }
   } catch(e) {
-    Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+    const keys = Object.keys(localStorage);
+    keys.forEach(k => { if (k.startsWith('isp_') || k === 'isp_version') localStorage.removeItem(k); });
     localStorage.setItem('isp_version', DATA_VERSION);
   }
 })();
