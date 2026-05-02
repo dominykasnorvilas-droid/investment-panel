@@ -746,6 +746,8 @@ label {
               <th>TICKER</th>
               <th>NAME</th>
               <th>COUNTRY</th>
+              <th>SHARES</th>
+              <th>CURRENT PRICE</th>
               <th>CURRENT VALUE</th>
               <th>PORTFOLIO %</th>
               <th>NOTES</th>
@@ -1591,6 +1593,8 @@ function renderPortfolio() {
       <td class="td-ticker">${p.ticker}</td>
       <td style="font-weight:600;">${p.name}</td>
       <td><span class="badge badge-pipeline" style="font-size:11px;">${p.country}</span></td>
+      <td class="td-mono">${p.shares ? p.shares.toLocaleString() : '—'}</td>
+      <td class="td-mono">${p.currentPrice ? (p.currency==='JPY' ? '¥'+p.currentPrice.toLocaleString() : '€'+p.currentPrice.toFixed(2)) : '—'}</td>
       <td class="td-mono" style="font-weight:600;">€${Math.round(p.currentValue).toLocaleString()}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;">
