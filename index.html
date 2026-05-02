@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '2.9';
+const DATA_VERSION = '3.0';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1573,46 +1573,65 @@ async function refreshPortfolioPrices() {
     const portfolio = load('portfolio');
     const tickers = portfolio.filter(p => p.yTicker).map(p => p.yTicker);
 
-    // Use CORS proxy to access Yahoo Finance from browser
+    // Stooq API — supports CORS from browser, free, reliable
+    // Map Yahoo tickers to Stooq format
+    function toStooq(ticker) {
+      const map = {
+        'FLOW.AS': 'flow.nl',
+        'FXPO.L': 'fxpo.uk',
+        'YRD': 'yrd.us',
+        'JFIN': 'jfin.us',
+        'OMSE': 'omse.us',
+        'XYF': 'xyf.us',
+        '3923.T': '3923.jp',
+        '1INN.DE': '1inn.de',
+        'G24.DE': 'g24.de',
+        'EURUSD=X': 'eurusd',
+        'EURJPY=X': 'eurjpy',
+        'GBPEUR=X': 'gbpeur',
+      };
+      return map[ticker] || ticker.toLowerCase();
+    }
+
     const allSymbols = [...tickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'];
-    const symbolStr = allSymbols.join(',');
 
-    // Try multiple endpoints — most reliable in 2026 is via spark/chart endpoint with CORS proxy
-    const proxies = [
-      'https://corsproxy.io/?',
-      'https://api.allorigins.win/raw?url=',
-      '',  // direct, sometimes works
-    ];
-
-    const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}`;
-
-    let data = null;
-    let lastError = null;
-    for (const proxy of proxies) {
+    // Stooq returns CSV — fetch each symbol
+    async function fetchStooqPrice(yTicker) {
+      const stooqSym = toStooq(yTicker);
+      const url = `https://stooq.com/q/l/?s=${stooqSym}&f=sd2t2ohlcv&h&e=csv`;
       try {
-        const url = proxy ? proxy + encodeURIComponent(yahooUrl) : yahooUrl;
-        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        if (!resp.ok) { lastError = 'HTTP ' + resp.status; continue; }
-        data = await resp.json();
-        if (data && (data.quoteResponse || data.contents)) {
-          // allorigins wraps response in 'contents' field as a string
-          if (data.contents && typeof data.contents === 'string') {
-            data = JSON.parse(data.contents);
-          }
-          break;
-        }
-      } catch(e) { lastError = e.message; continue; }
+        const resp = await fetch(url);
+        if (!resp.ok) return null;
+        const text = await resp.text();
+        // CSV format: Symbol,Date,Time,Open,High,Low,Close,Volume
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return null;
+        const cols = lines[1].split(',');
+        const close = parseFloat(cols[6]);
+        return isNaN(close) ? null : close;
+      } catch(e) {
+        return null;
+      }
     }
 
-    if (!data || !data.quoteResponse) {
-      throw new Error('All price sources failed: ' + (lastError || 'unknown'));
-    }
-
-    const quotes = data.quoteResponse.result || [];
-
-    // Build price map
     const priceMap = {};
-    quotes.forEach(q => { priceMap[q.symbol] = q.regularMarketPrice; });
+    let lastError = null;
+    await Promise.all(allSymbols.map(async sym => {
+      try {
+        const price = await fetchStooqPrice(sym);
+        if (price !== null) priceMap[sym] = price;
+      } catch(e) { lastError = e.message; }
+    }));
+
+    if (Object.keys(priceMap).length === 0) {
+      throw new Error('Stooq returned no data: ' + (lastError || 'try again'));
+    }
+    // Build a fake quotes array for compatibility with rest of code
+    const quotes = Object.entries(priceMap).map(([symbol, price]) => ({
+      symbol, regularMarketPrice: price
+    }));
+
+    // priceMap already built from Stooq fetch above
 
     // FX rates (EUR base)
     const usdPerEur = priceMap['EURUSD=X'] || 1.08;  // fallback
