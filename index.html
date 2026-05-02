@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '2.7';
+const DATA_VERSION = '2.8';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1667,6 +1667,11 @@ function renderPortfolio() {
   const TOTAL_INVESTED = 210000; // Fixed from Excel
   const CASH = -14594;           // Current cash balance
   const stocksValue = portfolio.reduce((s,p) => s + (p.currentValue||0), 0);
+
+  // Always recalculate portfolioPct on render
+  portfolio.forEach(p => {
+    p.portfolioPct = stocksValue > 0 ? ((p.currentValue||0) / stocksValue) * 100 : 0;
+  });
   const totalValue = stocksValue + CASH;
   const totalPL = totalValue - TOTAL_INVESTED;
   const totalPLPct = ((totalPL / TOTAL_INVESTED) * 100).toFixed(2);
@@ -1719,8 +1724,8 @@ function renderPortfolio() {
       <td class="td-mono" style="font-weight:600;">€${Math.round(p.currentValue).toLocaleString()}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;">
-          <div style="height:4px;width:${Math.min(p.portfolioPct*1.2,120)}px;max-width:120px;background:var(--accent);border-radius:2px;opacity:0.7;"></div>
-          <span class="td-mono">${p.portfolioPct.toFixed(1)}%</span>
+          <div style="height:4px;width:${Math.min((p.portfolioPct||0)*1.2,120)}px;max-width:120px;background:var(--accent);border-radius:2px;opacity:0.7;"></div>
+          <span class="td-mono">${(p.portfolioPct||0).toFixed(1)}%</span>
         </div>
       </td>
       <td style="font-size:13px;max-width:220px;
