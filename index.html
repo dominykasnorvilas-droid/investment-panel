@@ -1573,36 +1573,42 @@ async function refreshPortfolioPrices() {
     const portfolio = load('portfolio');
     const tickers = portfolio.filter(p => p.yTicker).map(p => p.yTicker);
 
-    // Yahoo Finance — try query2 first (better CORS), fallback to query1
+    // Use CORS proxy to access Yahoo Finance from browser
     const allSymbols = [...tickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'];
     const symbolStr = allSymbols.join(',');
 
+    // Try multiple endpoints — most reliable in 2026 is via spark/chart endpoint with CORS proxy
+    const proxies = [
+      'https://corsproxy.io/?',
+      'https://api.allorigins.win/raw?url=',
+      '',  // direct, sometimes works
+    ];
+
+    const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}`;
+
     let data = null;
-    const urls = [
-      `https://query2.finance.yahoo.com/v8/finance/spark?symbols=${symbolStr}&range=1d&interval=1d`,
-      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${symbolStr}&range=1d&interval=1d`,
-    ];
-
-    // Use the quote endpoint which returns current price
-    const quoteUrls = [
-      `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`,
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`,
-    ];
-
-    let resp = null;
-    for (const url of quoteUrls) {
+    let lastError = null;
+    for (const proxy of proxies) {
       try {
-        resp = await fetch(url, {
-          headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-          mode: 'cors',
-        });
-        if (resp.ok) break;
-      } catch(e) { continue; }
+        const url = proxy ? proxy + encodeURIComponent(yahooUrl) : yahooUrl;
+        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!resp.ok) { lastError = 'HTTP ' + resp.status; continue; }
+        data = await resp.json();
+        if (data && (data.quoteResponse || data.contents)) {
+          // allorigins wraps response in 'contents' field as a string
+          if (data.contents && typeof data.contents === 'string') {
+            data = JSON.parse(data.contents);
+          }
+          break;
+        }
+      } catch(e) { lastError = e.message; continue; }
     }
-    if (!resp || !resp.ok) throw new Error('Yahoo Finance unreachable — try again');
 
-    data = await resp.json();
-    const quotes = data.quoteResponse?.result || [];
+    if (!data || !data.quoteResponse) {
+      throw new Error('All price sources failed: ' + (lastError || 'unknown'));
+    }
+
+    const quotes = data.quoteResponse.result || [];
 
     // Build price map
     const priceMap = {};
@@ -3160,15 +3166,16 @@ function copyPrompt() {
    ============================================================ */
 async function refreshAll() {
   const btn = document.getElementById('main-refresh-btn');
-  btn.textContent = '⟳ Refreshing...';
-  btn.disabled = true;
+  if (btn) { btn.textContent = '⟳ Refreshing...'; btn.disabled = true; }
   try {
     await refreshPortfolioPrices();
+    showToast('Portfolio refreshed');
   } catch(e) {
+    console.error('refreshAll error:', e);
     showToast('Price refresh failed — ' + e.message);
   } finally {
-    btn.textContent = '↺ Refresh';
-    btn.disabled = false;
+    const b = document.getElementById('main-refresh-btn');
+    if (b) { b.textContent = '↺ Refresh'; b.disabled = false; }
   }
 }
 
