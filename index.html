@@ -2988,9 +2988,12 @@ function renderReview() {
 }
 
 function decideReviewCard(id, decision) {
+  console.log('[decideReviewCard] called:', id, decision);
+  try {
   const reviews = load('reviews');
   const review = reviews.find(r => r.id === id);
-  if (!review) return;
+  if (!review) { console.error('[decideReviewCard] review not found'); return; }
+  console.log('[decideReviewCard] review found:', review.name);
 
   if (decision === 'reject') {
     review.status = 'rejected';
@@ -3007,17 +3010,20 @@ function decideReviewCard(id, decision) {
     save('reviews', reviews);
     // Add to pipeline/watchlist
     const pipeline = load('pipeline');
-    pipeline.push({
+    const newEntry = {
       id: uid(), ticker: review.ticker, name: review.name,
       stage: 'watchlist', score: review.score, pe: review.pe, dr: review.dr,
       country: review.country, sector: review.sector,
-      reason: review.thesis, trigger: review.notes,
+      reason: review.thesis ? review.thesis.slice(0, 200) : 'Reviewed by Claude',
+      trigger: review.notes || 'Re-evaluate after next earnings',
       thesis: review.thesis, watch: review.watch,
       reviewed: today(), ratings: {}
-    });
+    };
+    pipeline.push(newEntry);
     save('pipeline', pipeline);
+    console.log('[decideReviewCard] pushed to watchlist. Pipeline now has', pipeline.length, 'items. Last:', newEntry);
     updateBadges();
-    showToast(review.name + ' added to Watchlist');
+    showToast(review.name + ' added to Watchlist — see Watchlist tab');
     renderReview();
     return;
   }
@@ -3072,6 +3078,10 @@ function decideReviewCard(id, decision) {
     showToast(review.name + ' added to Candidates' + (replaceId ? ' (replaced previous)' : ''));
     renderReview();
     renderDashboard();
+  }
+  } catch(e) {
+    console.error('[decideReviewCard] error:', e);
+    showToast('Error: ' + e.message);
   }
 }
 
