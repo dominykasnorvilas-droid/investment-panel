@@ -1232,21 +1232,27 @@ label {
    ============================================================ */
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
-// Self-heal: if stored data is from an old/broken session, wipe and reseed
+// Version-based reset — bump DATA_VERSION whenever seed data changes significantly
+const DATA_VERSION = '2.5';
 (function healStorage() {
   try {
+    const storedVersion = localStorage.getItem('isp_version');
+    if (storedVersion !== DATA_VERSION) {
+      console.log('[Panel] Data version mismatch (' + storedVersion + ' → ' + DATA_VERSION + ') — resetting');
+      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      localStorage.setItem('isp_version', DATA_VERSION);
+    }
     const raw = localStorage.getItem('isp_stocks');
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Check if data looks valid — must be array with ticker and name
       if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].ticker || !parsed[0].name) {
-        console.log('[Panel] Stale/broken data detected — resetting localStorage');
         Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+        localStorage.setItem('isp_version', DATA_VERSION);
       }
     }
   } catch(e) {
-    // JSON parse error = definitely broken
     Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+    localStorage.setItem('isp_version', DATA_VERSION);
   }
 })();
 
