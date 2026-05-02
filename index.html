@@ -733,6 +733,33 @@ label {
     <!-- NOTICE / FLOW PHASE -->
     <div id="flow-notice-banner"></div>
 
+    <!-- PORTFOLIO SECTION -->
+    <div class="card" style="margin-bottom:20px;" id="portfolio-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div class="card-title" style="margin-bottom:0;">Live Portfolio</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;" id="portfolio-kpis"></div>
+      </div>
+      <div class="table-wrap">
+        <table id="portfolio-table">
+          <thead>
+            <tr>
+              <th>TICKER</th>
+              <th>NAME</th>
+              <th>COUNTRY</th>
+              <th>INVESTED</th>
+              <th>CURRENT VALUE</th>
+              <th>P/L</th>
+              <th>P/L %</th>
+              <th>P/E NOW</th>
+              <th>PORTFOLIO %</th>
+              <th>NOTES</th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- MAIN TABLE -->
     <div class="grid grid-12" style="margin-bottom:20px;">
       <div class="card span-12">
@@ -1199,7 +1226,7 @@ label {
 /* ============================================================
    DATA LAYER — localStorage persistence
    ============================================================ */
-const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews' };
+const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Self-heal: if stored data is from an old/broken session, wipe and reseed
 (function healStorage() {
@@ -1409,6 +1436,41 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
   save('pipeline', pipeline);
 
   saveObj('flow', { regime:'low-cheap', alloc:80, notes:'Pre-correction phase. FLOW is dominant holding while compounders are seeded.', updated: today() });
+
+  // Seed portfolio positions from Excel
+  if (load('portfolio').length === 0) {
+    const portfolio = [
+      { id: uid(), ticker:'FLOW', name:'FLOW', country:'NL', industry:'Market Making / Volatility',
+        currency:'EUR', invested:173000, currentValue:180972, shares:6600,
+        buyPrice:25.92, currentPrice:27.42, pl:7972, plPct:4.61,
+        peNow:8.54, portfolioPct:84.33, purchaseDate:'—', notes:'Core strategy engine. Largest position.' },
+      { id: uid(), ticker:'UA-MINE', name:'UA Mining Position', country:'UA', industry:'Metals & Mining',
+        currency:'EUR', invested:45000, currentValue:14712, shares:45976,
+        buyPrice:0.98, currentPrice:0.32, pl:-30288, plPct:-67.31,
+        peNow:null, portfolioPct:6.86, purchaseDate:'—', notes:'Ukrainian mining. Separate from candidates list.' },
+      { id: uid(), ticker:'XYF', name:'X Financial', country:'CN', industry:'Consumer Finance',
+        currency:'USD', invested:22400, currentValue:14636, shares:3630,
+        buyPrice:11.61, currentPrice:4.72, pl:-7763, plPct:-34.66,
+        peNow:1.05, portfolioPct:6.82, purchaseDate:'2025-04-29 / 2025-10-29', notes:'Two tranches. Attack / signal-driven. Awaiting YRD signal confirmation.' },
+      { id: uid(), ticker:'OMSE', name:'OMSE', country:'SG', industry:'Energy Equipment Services',
+        currency:'USD', invested:5750, currentValue:2793, shares:700,
+        buyPrice:9.41, currentPrice:4.67, pl:-2957, plPct:-51.43,
+        peNow:3.76, portfolioPct:1.30, purchaseDate:'2025-05-29', notes:'Attack / cyclical deep value.' },
+      { id: uid(), ticker:'3923', name:'Rakus', country:'JP', industry:'SaaS',
+        currency:'JPY', invested:6050, currentValue:6883, shares:1500,
+        buyPrice:752.09, currentPrice:857, pl:833, plPct:13.76,
+        peNow:24.97, portfolioPct:3.21, purchaseDate:'2026-04-13', notes:'Core compounder. Starter position.' },
+      { id: uid(), ticker:'1INN', name:'Innoscripta AG', country:'DE', industry:'SaaS / Tax Accounting',
+        currency:'EUR', invested:5550, currentValue:5480, shares:80,
+        buyPrice:69.40, currentPrice:68.50, pl:-70, plPct:-1.26,
+        peNow:16.92, portfolioPct:2.55, purchaseDate:'2026-04-23', notes:'Core compounder. Starter position.' },
+      { id: uid(), ticker:'G24', name:'Scout24 SE', country:'DE', industry:'Digital Real Estate',
+        currency:'EUR', invested:4100, currentValue:4260, shares:60,
+        buyPrice:68.45, currentPrice:71.00, pl:160, plPct:3.90,
+        peNow:19.96, portfolioPct:1.98, purchaseDate:'2026-04-28', notes:'Core compounder. Starter position.' },
+    ];
+    save('portfolio', portfolio);
+  }
 }
 
 /* ============================================================
@@ -1482,6 +1544,69 @@ function renderPage(name) {
 /* ============================================================
    DASHBOARD
    ============================================================ */
+function renderPortfolio() {
+  const portfolio = load('portfolio');
+  if (!portfolio || portfolio.length === 0) return;
+
+  // KPIs
+  const totalInvested = portfolio.reduce((s,p) => s + (p.invested||0), 0);
+  const totalValue = portfolio.reduce((s,p) => s + (p.currentValue||0), 0);
+  const totalPL = totalValue - totalInvested;
+  const totalPLPct = ((totalPL / totalInvested) * 100).toFixed(2);
+  const winners = portfolio.filter(p => p.pl > 0).length;
+  const losers = portfolio.filter(p => p.pl < 0).length;
+
+  const plColor = totalPL >= 0 ? 'var(--accent)' : 'var(--red)';
+  const plSign = totalPL >= 0 ? '+' : '';
+
+  document.getElementById('portfolio-kpis').innerHTML = `
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">TOTAL INVESTED</div>
+      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text2);">€${totalInvested.toLocaleString()}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">PORTFOLIO VALUE</div>
+      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text2);">€${Math.round(totalValue).toLocaleString()}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">TOTAL P/L</div>
+      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:${plColor};">${plSign}€${Math.round(totalPL).toLocaleString()} (${plSign}${totalPLPct}%)</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:2px;">POSITIONS</div>
+      <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text2);">${winners} <span style="color:var(--accent);">▲</span> / ${losers} <span style="color:var(--red);">▼</span></div>
+    </div>`;
+
+  // Table
+  const tbody = document.getElementById('portfolio-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  [...portfolio].sort((a,b) => (b.currentValue||0) - (a.currentValue||0)).forEach(p => {
+    const plPos = p.pl >= 0;
+    const plColor = plPos ? 'var(--accent)' : 'var(--red)';
+    const plSign = plPos ? '+' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-ticker">${p.ticker}</td>
+      <td style="font-weight:600;">${p.name}</td>
+      <td><span class="badge badge-pipeline" style="font-size:11px;">${p.country}</span></td>
+      <td class="td-mono">${p.currency} ${Math.round(p.invested).toLocaleString()}</td>
+      <td class="td-mono" style="font-weight:600;">${p.currency} ${Math.round(p.currentValue).toLocaleString()}</td>
+      <td class="td-mono" style="color:${plColor};font-weight:600;">${plSign}${p.currency} ${Math.round(p.pl).toLocaleString()}</td>
+      <td class="td-mono" style="color:${plColor};font-weight:600;">${plSign}${p.plPct.toFixed(2)}%</td>
+      <td class="td-mono">${p.peNow ? p.peNow.toFixed(1)+'×' : '—'}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="height:4px;width:${Math.min(p.portfolioPct,100)}px;max-width:100px;background:${p.pl>=0?'var(--accent)':'var(--red)'};border-radius:2px;opacity:0.7;"></div>
+          <span class="td-mono">${p.portfolioPct.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--muted2);max-width:180px;">${p.notes||'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
 function renderDashboard() {
   const stocks = load('stocks');
   const flow = loadObj('flow');
@@ -1516,6 +1641,9 @@ function renderDashboard() {
   // Re-render the grid
   const kpiRow = document.getElementById('kpi-row');
   kpiRow.querySelectorAll('.kpi-card').forEach(c=>c.classList.add('card'));
+
+  // PORTFOLIO
+  renderPortfolio();
 
   // FLOW banner
   const regimeLabels = {'low-cheap':'Low Vol / Cheap — Hold phase','low-expensive':'Low Vol / Expensive — Risk management','early-stress':'Early Stress — Rotation not forced yet','peak-stress':'Peak Stress — Sell FLOW, rotate compounders','deep-crash':'Deep Crash — Continue rotation, build compounders'};
