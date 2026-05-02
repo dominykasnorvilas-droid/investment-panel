@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.3';
+const DATA_VERSION = '3.4';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1579,7 +1579,14 @@ async function refreshPortfolioPrices() {
     const watchlistTickers = watchlistItems.map(p => p.yTicker);
 
     // Yahoo Finance via CORS proxies — returns price AND P/E in one call
-    const allSymbols = [...new Set([...tickers, ...watchlistTickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'])];
+    // Build candidate yTickers too
+    const candidateMap = {
+      'MEDI':'MEDIQ.OL','3923':'3923.T','1INN':'1INN.DE','G24':'G24.DE',
+      '3769':'3769.T','KSPI':'KSPI','XYF':'XYF','OMSE':'OMSE','FLOW':'FLOW.AS',
+      '6532':'6532.T'
+    };
+    const candidateTickers = load('stocks').map(s => candidateMap[s.ticker]).filter(Boolean);
+    const allSymbols = [...new Set([...tickers, ...watchlistTickers, ...candidateTickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'])];
     const symbolStr = allSymbols.join(',');
 
     const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}`;
@@ -1699,19 +1706,19 @@ async function refreshPortfolioPrices() {
     });
     save('pipeline', pipeline);
 
-    // Also update candidate stocks P/E
+    // Also update candidate stocks P/E (candidateMap already declared above)
     const stocks = load('stocks');
-    const candidateMap = {
-      'MEDI':'MEDIQ.OL','3923':'3923.T','1INN':'1INN.DE','G24':'G24.DE',
-      '3769':'3769.T','KSPI':'KSPI','XYF':'XYF','OMSE':'OMSE','FLOW':'FLOW.AS'
-    };
+    let candidatesUpdated = 0;
     stocks.forEach(s => {
       const yT = candidateMap[s.ticker];
       if (yT && peMap[yT]) {
         s.pe = parseFloat(peMap[yT].toFixed(1));
+        candidatesUpdated++;
       }
     });
     save('stocks', stocks);
+    console.log('[Refresh] Candidates P/E updated:', candidatesUpdated);
+    console.log('[Refresh] Available P/Es:', Object.keys(peMap));
 
     renderPortfolio();
     renderDashboard();  // refresh top KPIs (FLOW % etc)
