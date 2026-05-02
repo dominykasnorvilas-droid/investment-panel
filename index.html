@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.0';
+const DATA_VERSION = '3.1';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1573,60 +1573,56 @@ async function refreshPortfolioPrices() {
     const portfolio = load('portfolio');
     const tickers = portfolio.filter(p => p.yTicker).map(p => p.yTicker);
 
-    // Stooq API — supports CORS from browser, free, reliable
-    // Map Yahoo tickers to Stooq format
+    // Multi-strategy price fetch — try Stooq via CORS proxies, fallback to Yahoo via proxies
     function toStooq(ticker) {
       const map = {
-        'FLOW.AS': 'flow.nl',
-        'FXPO.L': 'fxpo.uk',
-        'YRD': 'yrd.us',
-        'JFIN': 'jfin.us',
-        'OMSE': 'omse.us',
-        'XYF': 'xyf.us',
-        '3923.T': '3923.jp',
-        '1INN.DE': '1inn.de',
-        'G24.DE': 'g24.de',
-        'EURUSD=X': 'eurusd',
-        'EURJPY=X': 'eurjpy',
-        'GBPEUR=X': 'gbpeur',
+        'FLOW.AS': 'flow.nl', 'FXPO.L': 'fxpo.uk',
+        'YRD': 'yrd.us', 'JFIN': 'jfin.us', 'OMSE': 'omse.us', 'XYF': 'xyf.us',
+        '3923.T': '3923.jp', '1INN.DE': '1inn.de', 'G24.DE': 'g24.de',
+        'EURUSD=X': 'eurusd', 'EURJPY=X': 'eurjpy', 'GBPEUR=X': 'gbpeur',
       };
       return map[ticker] || ticker.toLowerCase();
     }
 
     const allSymbols = [...tickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'];
+    const priceMap = {};
 
-    // Stooq returns CSV — fetch each symbol
-    async function fetchStooqPrice(yTicker) {
+    // Try Stooq first via CORS proxy
+    async function tryStooq(yTicker) {
       const stooqSym = toStooq(yTicker);
-      const url = `https://stooq.com/q/l/?s=${stooqSym}&f=sd2t2ohlcv&h&e=csv`;
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) return null;
-        const text = await resp.text();
-        // CSV format: Symbol,Date,Time,Open,High,Low,Close,Volume
-        const lines = text.trim().split('\n');
-        if (lines.length < 2) return null;
-        const cols = lines[1].split(',');
-        const close = parseFloat(cols[6]);
-        return isNaN(close) ? null : close;
-      } catch(e) {
-        return null;
+      const directUrl = `https://stooq.com/q/l/?s=${stooqSym}&f=sd2t2ohlcv&h&e=csv`;
+      const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(directUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`,
+      ];
+      for (const url of proxies) {
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) continue;
+          const text = await resp.text();
+          const lines = text.trim().split('\n');
+          if (lines.length < 2) continue;
+          const cols = lines[1].split(',');
+          const close = parseFloat(cols[6]);
+          if (!isNaN(close) && close > 0) return close;
+        } catch(e) { continue; }
       }
+      return null;
     }
 
-    const priceMap = {};
-    let lastError = null;
-    await Promise.all(allSymbols.map(async sym => {
-      try {
-        const price = await fetchStooqPrice(sym);
-        if (price !== null) priceMap[sym] = price;
-      } catch(e) { lastError = e.message; }
+    // Fetch all symbols in parallel
+    const results = await Promise.all(allSymbols.map(async sym => {
+      const price = await tryStooq(sym);
+      return [sym, price];
     }));
+    results.forEach(([sym, price]) => {
+      if (price !== null) priceMap[sym] = price;
+    });
 
     if (Object.keys(priceMap).length === 0) {
-      throw new Error('Stooq returned no data: ' + (lastError || 'try again'));
+      throw new Error('All proxies blocked. Try in 1 minute or check network.');
     }
-    // Build a fake quotes array for compatibility with rest of code
+
     const quotes = Object.entries(priceMap).map(([symbol, price]) => ({
       symbol, regularMarketPrice: price
     }));
