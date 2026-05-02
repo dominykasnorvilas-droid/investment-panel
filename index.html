@@ -1231,7 +1231,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '2.5';
+const DATA_VERSION = '2.6';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1571,15 +1571,35 @@ async function refreshPortfolioPrices() {
     const portfolio = load('portfolio');
     const tickers = portfolio.filter(p => p.yTicker).map(p => p.yTicker);
 
-    // Yahoo Finance v8 chart endpoint — CORS-friendly
-    // Fetch USD/EUR and JPY/EUR rates too
+    // Yahoo Finance — try query2 first (better CORS), fallback to query1
     const allSymbols = [...tickers, 'EURUSD=X', 'EURJPY=X', 'GBPEUR=X'];
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${allSymbols.join(',')}&fields=regularMarketPrice,currency`;
+    const symbolStr = allSymbols.join(',');
 
-    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!resp.ok) throw new Error('Yahoo Finance returned ' + resp.status);
+    let data = null;
+    const urls = [
+      `https://query2.finance.yahoo.com/v8/finance/spark?symbols=${symbolStr}&range=1d&interval=1d`,
+      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${symbolStr}&range=1d&interval=1d`,
+    ];
 
-    const data = await resp.json();
+    // Use the quote endpoint which returns current price
+    const quoteUrls = [
+      `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`,
+      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`,
+    ];
+
+    let resp = null;
+    for (const url of quoteUrls) {
+      try {
+        resp = await fetch(url, {
+          headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+          mode: 'cors',
+        });
+        if (resp.ok) break;
+      } catch(e) { continue; }
+    }
+    if (!resp || !resp.ok) throw new Error('Yahoo Finance unreachable — try again');
+
+    data = await resp.json();
     const quotes = data.quoteResponse?.result || [];
 
     // Build price map
