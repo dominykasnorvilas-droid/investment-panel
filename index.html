@@ -1787,6 +1787,7 @@ async function refreshPortfolioPrices() {
     });
     save('stocks', stocks);
     console.log('[Refresh] Candidates P/E updated:', candidatesUpdated);
+    console.log('[Refresh] Saved stocks. Sample:', stocks.slice(0,3).map(s => s.ticker + '=' + s.pe).join(', '));
     console.log('[Refresh] Available P/Es:', Object.keys(peMap));
 
     renderPortfolio();
@@ -3360,16 +3361,19 @@ function resetSeedData() {
 
 function init() {
   try {
-    // Force clear any bad state and reseed
     const stocks = load('stocks');
+    console.log('[Init] Loaded', stocks?.length || 0, 'stocks. Sample PEs:',
+      stocks?.slice(0,3).map(s => s.ticker + '=' + s.pe).join(', '));
     if (!stocks || !Array.isArray(stocks) || stocks.length === 0 || !stocks[0] || !stocks[0].ticker) {
+      console.log('[Init] Stocks broken/empty — clearing');
       Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
     }
     seedData();
-    // Verify seed worked
     const afterSeed = load('stocks');
+    console.log('[Init] After seedData:', afterSeed?.length || 0, 'stocks. Sample PEs:',
+      afterSeed?.slice(0,3).map(s => s.ticker + '=' + s.pe).join(', '));
     if (!afterSeed || afterSeed.length === 0) {
-      console.error('[Panel] seedData failed — retrying with clean slate');
+      console.error('[Panel] seedData failed — retrying');
       Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
       seedData();
     }
