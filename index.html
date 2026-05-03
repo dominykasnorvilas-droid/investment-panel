@@ -1231,7 +1231,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '4.3';
+const DATA_VERSION = '4.4';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1475,6 +1475,85 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
           roce:'6/6 — Full marks. Operating profit ¥50.9bn against equity ¥117bn with negligible debt and a capital-light model produces exceptional returns on capital. Asset-light consulting amplifies ROCE naturally.',
           capex_intensity:'3/3 — Full marks. FY2026 capex only ¥2.645bn against ¥148.3bn revenue. Operating cash flow ¥37.6bn. Capex intensity is negligible.'
         } }
+      ,
+      { id: uid(), ticker:'HLMA', name:'Halma plc', country:'United Kingdom',
+        sector:'Diversified Industrial / Safety, Health & Environment Tech',
+        price:4255, pe:41.5, eps:94.23, market_cap:'£14.3B',
+        score:84, moat:11, predictability:13, growth_durability:11,
+        revenue_quality:8, balance_sheet:9, growth_strength:6,
+        reinvestment_runway:7, management:5, capital_allocation:6,
+        roce:5, capex_intensity:3, dr:'YES',
+        thesis:'A unique decentralized industrial holding company that owns ~45 niche-leading specialty businesses across Safety, Environmental & Analysis, and Healthcare. Each subsidiary is a small-medium specialist with leading market share in regulated, mission-critical niches with limited competition. Halma\'s differentiator is the operating model: subsidiary autonomy, talent development, and disciplined bolt-on M&A. The result is 22 consecutive years of profit growth, 46 consecutive years of 5%+ dividend growth, and consistent mid-teens ROIC — one of the most reliable compounding records on the LSE.',
+        watch:'Organic revenue growth still ≥7-9%? (FY25: 9%)\nAdjusted EBIT margin holding 20-23%? (FY25: 21.6%, mid-target)\nCash conversion ≥90%? (FY25: 112%, exceptional)\nROTIC still ≥12-15%? (FY25: 15%, well above 9.8% WACC)\nNet debt/EBITDA staying ≤2x? (FY25: 0.97x, very strong)\nM&A pace: 5-10 bolt-on acquisitions per year, disciplined pricing?\nNo single acquisition >£200m (preserves bolt-on discipline)\nHealthcare segment recovering from soft FY25?\n\nDecision:\nADD (price below 30× PE OR clear cyclical pullback)\nHOLD (thesis intact, valuation full)\nTRIM (PE above 45× without growth acceleration)\nSELL (organic growth drops below 5% sustainably or cash conversion <90%)',
+        break_thesis:'Organic revenue growth drops below 5% sustainably\nEBIT margin compresses below 19% structurally\nCash conversion drops below 90% for multiple periods\nRotic falls below 12% target consistently\nLarge transformative acquisition (>£500m) — would change risk profile\nDecentralized model breaks down — leadership turnover or central interference\nKey end markets (safety regulation, healthcare) deregulate or commoditize',
+        notes:'T1 entry: £30-34 (P/E ~32-36×, near long-term median). T2: £24-28 (P/E ~25-30×, dislocation entry — historically rare). Watchlist candidate at current valuation.',
+        t1:'£30-34', t2:'£24-28',
+        latest_earnings:'FY2025 (12mo to Mar 31, 2025): Revenue £2,248m +11% YoY, Adj EBIT £486m +15% YoY, Adj EPS 94.23p +14% YoY. Adj EBIT margin 21.6% (+80bps). Cash conversion 112%. ROTIC 15.0%. Dividend +7% (46th consecutive year of 5%+ growth). 7 acquisitions completed for £157m. 22nd consecutive year of profit growth.',
+        reviewed_by:'Claude', reviewed_date:'2026-05-03', status:'pending',
+        reasoning:{
+          moat:'11/14 — Strong but distributed across many small businesses rather than one wide moat. Each of ~45 subsidiaries holds leading position in a regulated niche with limited competition (smoke detectors, gas analyzers, ophthalmic devices, etc). Switching costs and regulatory certification create real barriers, but no single dominant moat — the moat comes from portfolio breadth and the M&A engine rather than a flagship product.',
+          predictability:'13/14 — Exceptional. 22 consecutive years of profit growth, 46 consecutive years of dividend growth ≥5%. The decentralized model and diversified end-market mix (safety, healthcare, environmental) deliver remarkably stable revenue and margin trends across cycles. Among the most predictable industrials in Europe.',
+          growth_durability:'11/12 — Long-term drivers (safety regulation, healthcare aging, environmental monitoring, water quality) are structural and accelerating, not cyclical. Bolt-on M&A engine continues to identify niche companies at attractive multiples (~£20-30m typical deal size). Risk: scaling effect — at £14B market cap, £150m of annual M&A moves the needle less than it did at £3B.',
+          revenue_quality:'8/12 — Mixed. Mostly product sales (medium recurring), some recurring service/consumables (e.g. healthcare devices), but not subscription/SaaS recurring. End-market diversification helps quality. Not as high-quality as software or transactional payments businesses but more resilient than typical industrial cyclicals.',
+          balance_sheet:'9/10 — Excellent. Net debt/EBITDA at 0.97x, well within their self-imposed 2x ceiling. Strong investment-grade credit. The only point off: maintains some leverage to support M&A engine rather than running net cash like top-tier compounders.',
+          growth_strength:'6/8 — Solid but not exceptional. FY25 revenue +11%, organic +9%, adjusted EBIT +15%. This is good for an industrial of this size, but below the 15-20%+ growth seen in faster-growing compounders like Rakus or BayCurrent. The law of large numbers applies — sustaining double-digit growth at £14B cap is harder.',
+          reinvestment_runway:'7/8 — Strong. M&A pipeline remains active (7 deals in FY25), and end markets in safety, environmental and healthcare technology are still fragmented globally with hundreds of potential targets. R&D investment of 4.8% of sales supports organic innovation. Limited only by size — can no longer move needle with small bolt-ons alone.',
+          management:'5/7 — Solid but not exceptional. Marc Ronchetti became CEO in 2024 (replacing Andrew Williams who served 18 years). Good handover, results delivery so far is strong. No founder ownership — Halma is a professionally managed FTSE 100 company. Dame Louise Makin chairs. Capital allocation discipline and decentralized operating model are well-embedded culture, not personality-dependent. Lower than top mark because professional rather than owner-operator.',
+          capital_allocation:'6/6 — Excellent. The disciplined bolt-on M&A model — average deal size £20-30m, focused on niches Halma understands, paid via cash flow rather than dilution — is one of the cleanest capital allocation records in the LSE 100. 46 consecutive years of dividend growth ≥5%. They occasionally divest non-core businesses (e.g. Texecom) which is rare discipline.',
+          roce:'5/6 — Strong. ROTIC of 15% is well above their 9.8% WACC and their 12% target. ROIC ~14.3%, ROE ~18.6%. Not as high as asset-light SaaS, but exceptional for an acquisitive industrial. Loses one point because acquired goodwill is in the denominator and improving meaningfully would require either margin expansion or organic growth above bolt-on.',
+          capex_intensity:'3/3 — Full marks. Capex/sales is low (~3-4%), R&D is 4.8% — both are low for an industrial. Asset-light by industrial standards. Cash conversion of 112% in FY25 reflects this.'
+        },
+        full_analysis:`WHAT THE BUSINESS DOES
+
+Halma plc is a £14 billion FTSE 100 industrial holding company that owns approximately 45 specialty businesses across three sectors: Safety (fire detection, worker safety, gas detection), Environmental & Analysis (water analysis, optoelectronics, environmental monitoring), and Healthcare (ophthalmic devices, medical imaging, diagnostic equipment). The unifying purpose is "life-saving technology" — products that protect people, monitor the environment, or improve healthcare delivery in regulated mission-critical applications.
+
+What makes Halma distinctive is the operating model: each subsidiary is a niche specialist with significant local autonomy, supported by central capital allocation, talent development, and strategic guidance. The CEO of each subsidiary remains the operational decision-maker; Halma central provides M&A, international expansion support, and a "Growth Enablers" framework. Acquisitions are typically £20-50m bolt-ons paid in cash, integrated lightly to preserve subsidiary culture and customer relationships.
+
+The financial track record is exceptional: 22 consecutive years of profit growth, 46 consecutive years of dividend growth at 5% or more. FY2025 (year to March 2025) delivered revenue of £2,248m (+11%), adjusted EBIT of £486m (+15%, margin 21.6%), cash conversion of 112%, and return on total invested capital of 15.0% — well above their 9.8% weighted average cost of capital. Net debt/EBITDA sits at just 0.97x.
+
+STRENGTHS RELATIVE TO YOUR FRAMEWORK
+
+The predictability is among the strongest you'll find in an industrial business. Two-plus decades of consecutive profit growth through multiple recessions, a financial crisis, COVID, and the recent inflation cycle reflects the diversification of the portfolio across roughly 45 businesses serving different end markets and geographies. No single product, customer, or end market dominates exposure.
+
+Capital allocation is best-in-class. The bolt-on M&A approach — small deals at attractive multiples, paid in cash, integrated lightly — is one of the most disciplined frameworks in the LSE 100. They have demonstrated willingness to divest non-core businesses (Texecom in 2021) which is rare evidence of true capital discipline rather than empire-building. The 46-year dividend growth record speaks to the consistency.
+
+Balance sheet is fortress-grade. Net debt/EBITDA below 1× is well within their self-imposed 2× ceiling and provides ample firepower for opportunistic M&A without any risk of distress. Cash conversion of 112% in FY25 demonstrates excellent working capital management.
+
+Returns on capital are well above hurdle rates: 15% ROTIC vs 9.8% WACC, 14% ROIC, 18.6% ROE. These are exceptional numbers for an acquisitive industrial because acquired goodwill sits in the denominator and naturally drags returns. Maintaining these levels while continuing to deploy capital into M&A is genuinely difficult.
+
+Downturn resistance is high. Most end markets (safety regulation, healthcare devices, environmental monitoring, water quality) are driven by regulatory and demographic forces rather than discretionary spending. Smoke detectors don't get cancelled in a recession. This is the kind of business that produces profit every year regardless of macro environment.
+
+WEAKNESSES RELATIVE TO YOUR FRAMEWORK
+
+Revenue quality is medium. Halma sells products and equipment (some with recurring service/consumables) but does not have meaningful subscription or transactional recurring revenue like a SaaS or payments business. End-market diversity helps, but the core revenue model is still equipment sales. This caps the revenue quality score relative to top-tier software compounders.
+
+Growth rate is decelerating with size. Organic growth of 9% is good for an industrial but below the 15-20%+ growth seen in your faster-growing candidates like Rakus, GMO, or BayCurrent. At £14B market capitalization, the law of large numbers makes it increasingly hard to sustain double-digit organic growth from bolt-on M&A alone — they would need either a strategic shift toward larger deals (introducing risk) or significant organic acceleration.
+
+The moat is real but distributed rather than dominant. Halma does not have one wide-moat flagship product like Medistim's imaging system or GMO's payment infrastructure. Instead, the moat is the M&A engine itself plus dozens of small niches. This is a different kind of competitive advantage — robust but not as easy to point to.
+
+Management is professional rather than founder-aligned. Marc Ronchetti became CEO in 2024 succeeding Andrew Williams (18 years). The transition appears smooth and culture is well-embedded, but there is no significant insider ownership and no founder driving the company. This is corporate excellence, not owner-operator excellence — and your framework values the latter more highly.
+
+Valuation is the largest near-term concern. At ~£42.50 per share with TTM EPS around 94p adjusted, Halma trades at roughly 41-45× P/E on most measures. Even on the higher adjusted EPS, this is well above the long-term median of ~37× and toward the upper end of its historical range. The premium is justified by the quality, but creates limited margin of safety at current entry.
+
+COMPARISON TO YOUR CURRENT HOLDINGS
+
+vs Medistim (87): Medistim has a cleaner moat (mission-critical surgical imaging with very high gross margins ~70%) and faster organic growth (~20%+). Halma is more diversified and far larger, with longer track record. Both score in the elite tier but Medistim is the higher-quality compounder by your framework.
+
+vs Scout24 (84): Same score (84). Scout24 has a stronger network-effect moat in its German real estate marketplace and higher EBITDA margin (~62%). Halma is more diversified and has longer compounding history. Scout24 is the cleaner business by margin profile and moat quality; Halma has the more proven multi-decade track record.
+
+vs Rakus (84): Same score (84). Rakus has stickier SaaS recurring revenue and faster growth (~15%+). Halma is much larger and more durable through cycles. Different propositions: Rakus is a higher-quality recurring-revenue business with more growth; Halma is a more diversified, larger, more durable industrial compounder.
+
+vs Innoscripta (81), GMO (80), KSPI (78): Halma scores higher than all three. The exceptional track record (22 years of profit growth, 46 years of dividend growth) and the capital allocation discipline put Halma in a higher tier than these candidates, even though some have higher margins or faster growth.
+
+CONCLUSION
+
+Halma is one of the genuinely highest-quality businesses you could own — the kind of compounder that is in the top quartile of European industrials by virtually every quality measure. The 22-year profit growth and 46-year dividend growth records are not accidents; they reflect a genuinely well-engineered operating model and disciplined capital allocation.
+
+The challenge is valuation. At 41× TTM PE, Halma trades well above the historical median and offers limited margin of safety. The long-term return from this entry point depends heavily on continued growth at scale and limited multiple compression — both reasonable assumptions but not bargain assumptions.
+
+Recommendation: Watchlist. The business clearly belongs in your candidate universe but the entry is poor at current prices. T1 entry zone of £30-34 (P/E ~32-36×, near long-term median) makes the case much stronger. T2 of £24-28 (P/E ~25-30×) would be a generational opportunity that historically only opens during major market dislocations. Worth tracking and being ready to buy on any meaningful pullback.`,
+        replace_analysis:'<strong>Verdict: Watchlist — exceptional quality but valuation full</strong><br><br>Halma scores 84/100, equal to Scout24 and Rakus, slightly below Medistim (87). At ~41× TTM P/E, valuation is well above the long-term median of ~37× and offers limited margin of safety. The business itself is one of the highest-quality compounders you could own, but the entry price is the issue.<br><br>No current candidate should be replaced. Halma does not displace Medistim (87, faster growth, cleaner moat). It does not displace Rakus (84, recurring SaaS revenue, faster growth at smaller size). It does not displace Scout24 (84, stronger margin profile, network-effect moat).<br><br><strong>When to reconsider:</strong> A pullback to £30-34 (T1, ~32-36× P/E near long-term median) makes Halma genuinely interesting. £24-28 (T2, ~25-30× P/E) would be a major opportunity that historically only opens during severe market stress.<br><br>Add to Watchlist with revisit trigger at £34 or below.'
+      }
     ];
     save('reviews', reviews);
   }
@@ -1654,7 +1733,7 @@ async function refreshPortfolioPrices() {
     // Stooq-first: confirmed working from previous tests
     function toStooq(ticker) {
       const m = {
-        'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','FEX.DE':'fex.de','FEX.MU':'fex.de','FEX.F':'fex.de','YRD':'yrd.us','JFIN':'jfin.us',
+        'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','FEX.DE':'fex.de','FEX.MU':'fex.de','FEX.F':'fex.de','HLMA.L':'hlma.uk','YRD':'yrd.us','JFIN':'jfin.us',
         'OMSE':'omse.us','XYF':'xyf.us','3923.T':'3923.jp','1INN.DE':'1inn.de','G24.DE':'g24.de',
         'NEM.DE':'nem.de','WKL.AS':'wkl.nl','3661.T':'3661.jp','6532.T':'6532.jp','5032.T':'5032.jp',
         'MEDIQ.OL':'mediq.no','3769.T':'3769.jp','KSPI':'kspi.us',
