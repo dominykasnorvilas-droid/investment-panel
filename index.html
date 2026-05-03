@@ -1231,16 +1231,17 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.9';
+const DATA_VERSION = '4.0';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
+    console.log('[Panel] Stored version:', storedVersion, 'Current version:', DATA_VERSION);
     if (storedVersion !== DATA_VERSION) {
       // Nuclear option: clear everything isp_ related
       const keys = Object.keys(localStorage);
       keys.forEach(k => { if (k.startsWith('isp_') || k === 'isp_version') localStorage.removeItem(k); });
       localStorage.setItem('isp_version', DATA_VERSION);
-      console.log('[Panel] Cleared localStorage — version', DATA_VERSION);
+      console.log('[Panel] VERSION MISMATCH — cleared localStorage to version', DATA_VERSION);
       return;
     }
     // Also check stocks integrity
