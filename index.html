@@ -1784,10 +1784,8 @@ async function refreshPortfolioPrices() {
       if (currency === 'USD') return price / usdPerEur;
       if (currency === 'JPY') return price / jpyPerEur;
       if (currency === 'GBP') {
-        // London-listed stocks like FXPO trade in pence (GBp), convert to GBP first
-        const gbpValue = price / 100;
-        // Then convert GBP to EUR using EUR per GBP rate (1/gbpPerEur)
-        return gbpValue * (1/gbpPerEur);
+        // Price already in GBP (pence-to-GBP conversion done in fetchStooq for London tickers)
+        return price * (1/gbpPerEur);
       }
       return price;
     }
