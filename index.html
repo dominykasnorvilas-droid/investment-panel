@@ -1231,33 +1231,36 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '4.0';
+const DATA_VERSION = '4.1';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
-    console.log('[Panel] Stored version:', storedVersion, 'Current version:', DATA_VERSION);
-    if (storedVersion !== DATA_VERSION) {
-      // Nuclear option: clear everything isp_ related
-      const keys = Object.keys(localStorage);
-      keys.forEach(k => { if (k.startsWith('isp_') || k === 'isp_version') localStorage.removeItem(k); });
-      localStorage.setItem('isp_version', DATA_VERSION);
-      console.log('[Panel] VERSION MISMATCH — cleared localStorage to version', DATA_VERSION);
-      return;
+    const stocksRaw = localStorage.getItem('isp_stocks');
+    console.log('[Panel] healStorage: version=', storedVersion, 'has_stocks=', !!stocksRaw);
+
+    // STRATEGY: Only clear data if stocks are MISSING or BROKEN.
+    // Version mismatch alone is NOT enough to wipe — preserves user refresh data.
+    // Just update the version stamp.
+
+    let stocksValid = false;
+    if (stocksRaw) {
+      try {
+        const parsed = JSON.parse(stocksRaw);
+        stocksValid = Array.isArray(parsed) && parsed.length >= 5 && parsed[0]?.ticker;
+      } catch(e) {}
     }
-    // Also check stocks integrity
-    const raw = localStorage.getItem('isp_stocks');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.length < 5) {
-        const keys = Object.keys(localStorage);
-        keys.forEach(k => { if (k.startsWith('isp_') || k === 'isp_version') localStorage.removeItem(k); });
-        localStorage.setItem('isp_version', DATA_VERSION);
-      }
+
+    if (!stocksValid) {
+      console.log('[Panel] Stocks missing/broken — clearing all data');
+      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+    } else if (storedVersion !== DATA_VERSION) {
+      console.log('[Panel] Version updated', storedVersion, '→', DATA_VERSION, '— keeping user data intact');
     }
-  } catch(e) {
-    const keys = Object.keys(localStorage);
-    keys.forEach(k => { if (k.startsWith('isp_') || k === 'isp_version') localStorage.removeItem(k); });
+
+    // Always set current version
     localStorage.setItem('isp_version', DATA_VERSION);
+  } catch(e) {
+    console.error('[Panel] healStorage error:', e);
   }
 })();
 
@@ -1293,14 +1296,15 @@ const RATING_FIELDS = [
 /* ---- SEED DATA ---- */
 function seedData() {
   const existing = load('stocks');
+  console.log('[seedData] called. existing stocks count:', existing.length);
   // Only seed stocks if missing (to preserve user edits to PE etc)
-  // But ALWAYS check portfolio/pipeline/reviews independently below
-  let needsStocksSeed = !(existing.length > 0 && existing[0].ticker);
+  let needsStocksSeed = !(existing.length > 0 && existing[0] && existing[0].ticker);
 
   if (!needsStocksSeed) {
-    // Stocks exist — skip to checking portfolio/pipeline/reviews
+    console.log('[seedData] stocks exist, calling seedRelatedData');
     return seedRelatedData();
   }
+  console.log('[seedData] seeding fresh stocks');
 
   const stocks = [
     { id: uid(), ticker:'MEDI', name:'Medistim', country:'Norway', sector:'MedTech', type:'compounder', status:'active',
