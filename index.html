@@ -1257,6 +1257,25 @@ const DATA_VERSION = '4.2';
       console.log('[Panel] Version updated', storedVersion, '→', DATA_VERSION, '— keeping user data intact');
     }
 
+    // One-shot data migrations (run before version write)
+    try {
+      const portRaw = localStorage.getItem('isp_portfolio');
+      if (portRaw) {
+        const port = JSON.parse(portRaw);
+        let migrated = false;
+        port.forEach(p => {
+          if (p.ticker === 'FXPO' && p.currency !== 'GBP') {
+            p.currency = 'GBP';
+            migrated = true;
+          }
+        });
+        if (migrated) {
+          localStorage.setItem('isp_portfolio', JSON.stringify(port));
+          console.log('[Panel] Migration: FXPO currency → GBP');
+        }
+      }
+    } catch(e) { console.warn('Migration skipped:', e); }
+
     // Always set current version
     localStorage.setItem('isp_version', DATA_VERSION);
   } catch(e) {
