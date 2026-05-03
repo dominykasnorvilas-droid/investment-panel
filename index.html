@@ -1669,24 +1669,37 @@ async function refreshPortfolioPrices() {
     ];
 
     async function fetchStooq(yT) {
-      const sym = toStooq(yT);
-      const direct = `https://stooq.com/q/l/?s=${sym}&f=sd2t2ohlcv&h&e=csv`;
-      for (const proxy of proxies) {
-        try {
-          const r = await fetch(proxy + encodeURIComponent(direct));
-          if (!r.ok) continue;
-          const t = await r.text();
-          if (yT.includes('FEX') || yT.includes('FXPO')) {
-            console.log('[Stooq] FXPO fetch:', sym, '→', t.split('\n')[1] || 'empty');
-          }
-          const lines = t.trim().split('\n');
-          if (lines.length < 2) continue;
-          const close = parseFloat(lines[1].split(',')[6]);
-          if (!isNaN(close) && close > 0) return close;
-        } catch(e) { continue; }
+      // Try primary symbol, plus alternates for problem tickers
+      const primarySym = toStooq(yT);
+      const candidates = [primarySym];
+      if (yT === 'FEX.DE' || yT === 'FXPO.L') {
+        // Ferrexpo: try London (works in pence then divide), Munich, Frankfurt variants
+        candidates.push('fxpo.uk', 'fex.de', 'fex.f', 'fex.mu', 'fex.sg');
       }
-      if (yT.includes('FEX') || yT.includes('FXPO')) {
-        console.log('[Stooq] FXPO failed for', sym);
+
+      for (const sym of [...new Set(candidates)]) {
+        const direct = `https://stooq.com/q/l/?s=${sym}&f=sd2t2ohlcv&h&e=csv`;
+        for (const proxy of proxies) {
+          try {
+            const r = await fetch(proxy + encodeURIComponent(direct));
+            if (!r.ok) continue;
+            const t = await r.text();
+            const lines = t.trim().split('\n');
+            if (lines.length < 2) continue;
+            const close = parseFloat(lines[1].split(',')[6]);
+            if (!isNaN(close) && close > 0) {
+              if (yT.includes('FEX') || yT.includes('FXPO')) {
+                console.log('[Stooq] FXPO got', close, 'from', sym);
+                // London returns pence — convert to GBP for caller, then EUR conversion handles it
+                if (sym === 'fxpo.uk') {
+                  // Mark this with a special return so toEur knows it's pence
+                  return { price: close / 100, currency: 'GBP' };
+                }
+              }
+              return close;
+            }
+          } catch(e) { continue; }
+        }
       }
       return null;
     }
@@ -1698,12 +1711,17 @@ async function refreshPortfolioPrices() {
     }));
 
     const priceMap = {};
+    const currencyOverrides = {};  // for tickers fetched from a different listing
     let fetchedCount = 0;
     results.forEach(([sym, px]) => {
-      if (px !== null) {
+      if (px === null || px === undefined) return;
+      if (typeof px === 'object' && px.price) {
+        priceMap[sym] = px.price;
+        currencyOverrides[sym] = px.currency;
+      } else {
         priceMap[sym] = px;
-        fetchedCount++;
       }
+      fetchedCount++;
     });
 
     console.log('[Refresh] Got', fetchedCount, 'of', allSymbols.length, 'prices');
@@ -1779,9 +1797,9 @@ async function refreshPortfolioPrices() {
     portfolio.forEach(p => {
       if (!p.yTicker || !priceMap[p.yTicker]) return;
       const nativePrice = priceMap[p.yTicker];
+      const effectiveCurrency = currencyOverrides[p.yTicker] || p.currency;
       p.currentPrice = nativePrice;
-      p.currentValue = toEur(nativePrice, p.currency) * p.shares;
-      // Live PE: try Twelve Data first, fallback to price/eps
+      p.currentValue = toEur(nativePrice, effectiveCurrency) * p.shares;
       if (peMap[p.yTicker]) {
         p.peNow = parseFloat(peMap[p.yTicker].toFixed(1));
       } else if (p.eps && p.eps > 0) {
