@@ -1654,7 +1654,7 @@ async function refreshPortfolioPrices() {
     // Stooq-first: confirmed working from previous tests
     function toStooq(ticker) {
       const m = {
-        'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','FEX.DE':'fex.de','YRD':'yrd.us','JFIN':'jfin.us',
+        'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','FEX.DE':'fex.de','FEX.MU':'fex.de','FEX.F':'fex.de','YRD':'yrd.us','JFIN':'jfin.us',
         'OMSE':'omse.us','XYF':'xyf.us','3923.T':'3923.jp','1INN.DE':'1inn.de','G24.DE':'g24.de',
         'NEM.DE':'nem.de','WKL.AS':'wkl.nl','3661.T':'3661.jp','6532.T':'6532.jp','5032.T':'5032.jp',
         'MEDIQ.OL':'mediq.no','3769.T':'3769.jp','KSPI':'kspi.us',
@@ -1676,11 +1676,17 @@ async function refreshPortfolioPrices() {
           const r = await fetch(proxy + encodeURIComponent(direct));
           if (!r.ok) continue;
           const t = await r.text();
+          if (yT.includes('FEX') || yT.includes('FXPO')) {
+            console.log('[Stooq] FXPO fetch:', sym, '→', t.split('\n')[1] || 'empty');
+          }
           const lines = t.trim().split('\n');
           if (lines.length < 2) continue;
           const close = parseFloat(lines[1].split(',')[6]);
           if (!isNaN(close) && close > 0) return close;
         } catch(e) { continue; }
+      }
+      if (yT.includes('FEX') || yT.includes('FXPO')) {
+        console.log('[Stooq] FXPO failed for', sym);
       }
       return null;
     }
