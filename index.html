@@ -1231,7 +1231,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '4.1';
+const DATA_VERSION = '4.2';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1489,7 +1489,7 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
         buyPrice:25.92, currentPrice:27.42, peNow:8.54, eps:3.21, purchaseDate:'—',
         notes:'Core strategy engine. Largest position.' },
       { id: uid(), ticker:'FXPO', name:'Ferrexpo PLC', country:'UA', industry:'Metals & Mining',
-        currency:'EUR', yTicker:'FXPO.L', invested:45000, currentValue:14712, shares:45976,
+        currency:'GBP', yTicker:'FXPO.L', invested:45000, currentValue:14712, shares:45976,
         buyPrice:0.98, currentPrice:0.32, peNow:null, purchaseDate:'—',
         notes:'Ukrainian iron ore pellets. Separate from candidates list.' },
       { id: uid(), ticker:'YRD', name:'Yiren Digital Ltd.', country:'CN', industry:'Investment Banking & Services',
@@ -1735,12 +1735,17 @@ async function refreshPortfolioPrices() {
     const usdPerEur = priceMap['EURUSD=X'] || 1.08;  // fallback
     const jpyPerEur = priceMap['EURJPY=X'] || 162;
 
-    const gbpPerEur = priceMap['GBPEUR=X'] ? 1/priceMap['GBPEUR=X'] : 0.856;
+    const gbpPerEur = priceMap['GBPEUR=X'] || 0.86;
     function toEur(price, currency) {
       if (currency === 'EUR') return price;
       if (currency === 'USD') return price / usdPerEur;
       if (currency === 'JPY') return price / jpyPerEur;
-      if (currency === 'GBP') return price / gbpPerEur;
+      if (currency === 'GBP') {
+        // London-listed stocks like FXPO trade in pence (GBp), convert to GBP first
+        const gbpValue = price / 100;
+        // Then convert GBP to EUR using EUR per GBP rate (1/gbpPerEur)
+        return gbpValue * (1/gbpPerEur);
+      }
       return price;
     }
 
