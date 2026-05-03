@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Investment Strategy Panel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1228,7 +1231,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.8';
+const DATA_VERSION = '3.9';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1279,8 +1282,15 @@ const RATING_FIELDS = [
 /* ---- SEED DATA ---- */
 function seedData() {
   const existing = load('stocks');
-  // Reseed if empty or clearly broken (no ticker field)
-  if (existing.length > 0 && existing[0].ticker) return;
+  // Only seed stocks if missing (to preserve user edits to PE etc)
+  // But ALWAYS check portfolio/pipeline/reviews independently below
+  let needsStocksSeed = !(existing.length > 0 && existing[0].ticker);
+
+  if (!needsStocksSeed) {
+    // Stocks exist — skip to checking portfolio/pipeline/reviews
+    return seedRelatedData();
+  }
+
   const stocks = [
     { id: uid(), ticker:'MEDI', name:'Medistim', country:'Norway', sector:'MedTech', type:'compounder', status:'active',
       price:220, pe:25.3, eps:8.7, fcf:0, score:87, moat:13, predictability:13, growth_durability:11, revenue_quality:11,
@@ -1356,6 +1366,11 @@ function seedData() {
       notes:'Strategy Engine / Hedge. Not scored by normal framework. Target after correction: 20%. Pre-correction: 80%.' }
   ];
   save('stocks', stocks);
+
+  seedRelatedData();
+}
+
+function seedRelatedData() {
   // Seed pending reviews from Claude
   if (load('reviews').length === 0) {
     const reviews = [
