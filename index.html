@@ -1261,7 +1261,17 @@ const DATA_VERSION = '4.0';
   }
 })();
 
-function load(key) { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS[key])) || []; } catch { return []; } }
+function load(key) { 
+  try { 
+    const raw = localStorage.getItem(STORAGE_KEYS[key]);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return parsed || []; 
+  } catch(e) { 
+    console.error('[load] error for', key, e);
+    return []; 
+  } 
+}
 function loadObj(key) { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS[key])) || {}; } catch { return {}; } }
 function save(key, data) { localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(data)); }
 function saveObj(key, data) { localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(data)); }
@@ -3365,8 +3375,8 @@ function init() {
     console.log('[Init] Loaded', stocks?.length || 0, 'stocks. Sample PEs:',
       stocks?.slice(0,3).map(s => s.ticker + '=' + s.pe).join(', '));
     if (!stocks || !Array.isArray(stocks) || stocks.length === 0 || !stocks[0] || !stocks[0].ticker) {
-      console.log('[Init] Stocks broken/empty — clearing');
-      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      console.log('[Init] Stocks broken/empty — clearing data (keeping version)');
+      Object.keys(localStorage).filter(k => k.startsWith('isp_') && k !== 'isp_version').forEach(k => localStorage.removeItem(k));
     }
     seedData();
     const afterSeed = load('stocks');
@@ -3374,7 +3384,7 @@ function init() {
       afterSeed?.slice(0,3).map(s => s.ticker + '=' + s.pe).join(', '));
     if (!afterSeed || afterSeed.length === 0) {
       console.error('[Panel] seedData failed — retrying');
-      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      Object.keys(localStorage).filter(k => k.startsWith('isp_') && k !== 'isp_version').forEach(k => localStorage.removeItem(k));
       seedData();
     }
     document.getElementById('nav-date').textContent = today();
@@ -3385,7 +3395,7 @@ function init() {
     console.error('[Panel] Init error:', e);
     // Last resort — nuke everything and try again
     try {
-      Object.keys(localStorage).filter(k => k.startsWith('isp_')).forEach(k => localStorage.removeItem(k));
+      Object.keys(localStorage).filter(k => k.startsWith('isp_') && k !== 'isp_version').forEach(k => localStorage.removeItem(k));
       seedData();
       renderDashboard();
       updateBadges();
