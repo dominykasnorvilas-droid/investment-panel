@@ -1231,7 +1231,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '4.2';
+const DATA_VERSION = '4.3';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1264,14 +1264,14 @@ const DATA_VERSION = '4.2';
         const port = JSON.parse(portRaw);
         let migrated = false;
         port.forEach(p => {
-          if (p.ticker === 'FXPO' && p.currency !== 'GBP') {
-            p.currency = 'GBP';
-            migrated = true;
+          if (p.ticker === 'FXPO') {
+            if (p.currency !== 'EUR') { p.currency = 'EUR'; migrated = true; }
+            if (p.yTicker !== 'FEX.DE') { p.yTicker = 'FEX.DE'; migrated = true; }
           }
         });
         if (migrated) {
           localStorage.setItem('isp_portfolio', JSON.stringify(port));
-          console.log('[Panel] Migration: FXPO currency → GBP');
+          console.log('[Panel] Migration: FXPO → FEX.DE EUR (Frankfurt listing)');
         }
       }
     } catch(e) { console.warn('Migration skipped:', e); }
@@ -1508,7 +1508,7 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
         buyPrice:25.92, currentPrice:27.42, peNow:8.54, eps:3.21, purchaseDate:'—',
         notes:'Core strategy engine. Largest position.' },
       { id: uid(), ticker:'FXPO', name:'Ferrexpo PLC', country:'UA', industry:'Metals & Mining',
-        currency:'GBP', yTicker:'FXPO.L', invested:45000, currentValue:14712, shares:45976,
+        currency:'EUR', yTicker:'FEX.DE', invested:45000, currentValue:14712, shares:45976,
         buyPrice:0.98, currentPrice:0.32, peNow:null, purchaseDate:'—',
         notes:'Ukrainian iron ore pellets. Separate from candidates list.' },
       { id: uid(), ticker:'YRD', name:'Yiren Digital Ltd.', country:'CN', industry:'Investment Banking & Services',
@@ -1654,7 +1654,7 @@ async function refreshPortfolioPrices() {
     // Stooq-first: confirmed working from previous tests
     function toStooq(ticker) {
       const m = {
-        'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','YRD':'yrd.us','JFIN':'jfin.us',
+        'FLOW.AS':'flow.nl','FXPO.L':'fxpo.uk','FEX.DE':'fex.de','YRD':'yrd.us','JFIN':'jfin.us',
         'OMSE':'omse.us','XYF':'xyf.us','3923.T':'3923.jp','1INN.DE':'1inn.de','G24.DE':'g24.de',
         'NEM.DE':'nem.de','WKL.AS':'wkl.nl','3661.T':'3661.jp','6532.T':'6532.jp','5032.T':'5032.jp',
         'MEDIQ.OL':'mediq.no','3769.T':'3769.jp','KSPI':'kspi.us',
