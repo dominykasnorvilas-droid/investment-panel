@@ -1228,7 +1228,7 @@ label {
 const STORAGE_KEYS = { stocks: 'isp_stocks', pipeline: 'isp_pipeline', earnings: 'isp_earnings', flow: 'isp_flow', reviews: 'isp_reviews', portfolio: 'isp_portfolio' };
 
 // Version-based reset — bump DATA_VERSION whenever seed data changes significantly
-const DATA_VERSION = '3.7';
+const DATA_VERSION = '3.8';
 (function healStorage() {
   try {
     const storedVersion = localStorage.getItem('isp_version');
@@ -1283,7 +1283,7 @@ function seedData() {
   if (existing.length > 0 && existing[0].ticker) return;
   const stocks = [
     { id: uid(), ticker:'MEDI', name:'Medistim', country:'Norway', sector:'MedTech', type:'compounder', status:'active',
-      price:220, pe:25.3, eps:0, fcf:0, score:87, moat:13, predictability:13, growth_durability:11, revenue_quality:11,
+      price:220, pe:25.3, eps:8.7, fcf:0, score:87, moat:13, predictability:13, growth_durability:11, revenue_quality:11,
       balance_sheet:9, growth_strength:7, reinvestment_runway:8, management:6, capital_allocation:5, roce:6, capex_intensity:3,
       dr:'YES', target_alloc:15, starter_alloc:3.75, t1:'', t2:'', conviction:'core', price_status:'waiting',
       thesis:'Niche cardiac and vascular surgery device company with strong moat driven by clinical adoption and regulatory barriers. High-margin business (~80% gross, ~28% EBIT) with ~70% recurring revenue from consumables. Growth accelerating (~20-25%) driven by installed base expansion and strong adoption in Americas. Imaging + Flow product transition significantly increases revenue per customer and drives margin expansion. Strong pricing power and mission-critical product create sticky customer relationships. Asset-light model with very high ROIC (~50%+) and strong cash generation.',
@@ -1291,7 +1291,7 @@ function seedData() {
       break_thesis:'Revenue growth drops below ~10-12% sustainably\nImaging adoption stagnates (no conversion from flow-only systems)\nRecurring revenue share declines structurally\nEBIT margins compress below ~22-24%\nProcedure growth (especially US) slows materially\nHospital capex cycle weakens significantly (impacting system sales)',
       notes:'Tier 1 - 87. Top-rated. Cleanest name on the list.' },
     { id: uid(), ticker:'3923', name:'Rakus', country:'Japan', sector:'SaaS', type:'compounder', status:'active',
-      price:752, pe:22.6, eps:0, fcf:0, score:84, moat:12, predictability:12, growth_durability:10, revenue_quality:11,
+      price:752, pe:22.6, eps:37.9, fcf:0, score:84, moat:12, predictability:12, growth_durability:10, revenue_quality:11,
       balance_sheet:8, growth_strength:8, reinvestment_runway:8, management:6, capital_allocation:4, roce:5, capex_intensity:3,
       dr:'YES', target_alloc:15, starter_alloc:3.75, t1:'', t2:'', conviction:'core', price_status:'waiting',
       thesis:'Japan SME SaaS (expense mgmt + invoicing). Recurring revenue, asset-light compounder. Growth driven by Japan digitalization (still underpenetrated). Moderate moat (sticky but not highly differentiated). Growth ~10-15%, margins expected to expand over time. Valuation reset from ~40x to ~25x P/E (multiple compression). Fair value compounder, not deep value.',
@@ -1299,7 +1299,7 @@ function seedData() {
       break_thesis:'Growth <10%\nMargins do not expand',
       notes:'Tier 1 - 84. Risk: growth slowdown + competition / product commoditization.' },
     { id: uid(), ticker:'1INN', name:'Innoscripta AG', country:'Germany', sector:'R&D Software', type:'compounder', status:'active',
-      price:0, pe:0, eps:0, fcf:0, score:81, moat:11, predictability:11, growth_durability:10, revenue_quality:10,
+      price:0, pe:0, eps:4.05, fcf:0, score:81, moat:11, predictability:11, growth_durability:10, revenue_quality:10,
       balance_sheet:8, growth_strength:8, reinvestment_runway:7, management:7, capital_allocation:5, roce:5, capex_intensity:3,
       dr:'YES', target_alloc:10, starter_alloc:2.5, t1:'', t2:'', conviction:'core', price_status:'waiting',
       thesis:'Leading German R&D tax credit software / workflow platform with very high profitability and strong founder alignment. Clusterix helps companies document, manage, and optimize R&D projects and tax credit applications in an audit-proof way. Strong growth: 2025 adjusted revenue +59.4%, adjusted EBIT +67.2%, net income +69.8%. Exceptional economics: ~61% adjusted EBIT margin, strong operating cash flow, low churn, high customer retention. Founder-led with high insider ownership.',
@@ -1307,7 +1307,7 @@ function seedData() {
       break_thesis:'Revenue growth drops below ~20% sustainably\nEBIT margin compresses below ~45-50%\nGerman tax-credit regime worsens materially\nRevenue remains too dependent on one product / one country with no diversification progress\nInternational expansion burns capital without traction\nCustomer acquisition slows sharply or churn rises\nReceivables / cash conversion deteriorate materially',
       notes:'Tier 1.5 - 81. Main upside: scaling in Germany, upselling broader R&D workflow use cases, and selective international expansion.' },
     { id: uid(), ticker:'G24', name:'Scout24 SE', country:'Germany', sector:'PropTech', type:'compounder', status:'active',
-      price:70, pe:20.9, eps:0, fcf:0, score:84, moat:12, predictability:12, growth_durability:11, revenue_quality:11,
+      price:70, pe:20.9, eps:3.55, fcf:0, score:84, moat:12, predictability:12, growth_durability:11, revenue_quality:11,
       balance_sheet:8, growth_strength:7, reinvestment_runway:7, management:6, capital_allocation:5, roce:5, capex_intensity:3,
       dr:'NEUTRAL', target_alloc:7.5, starter_alloc:2.0, t1:'58-66', t2:'47-57', conviction:'high', price_status:'waiting',
       thesis:'Leading German digital real estate marketplace / ecosystem with strong network effects and very high margins. Core strength comes from subscription revenue, agent workflow integration, and a growing homeowner / buyer / tenant ecosystem. FY2025 revenue +14.7%, ordinary operating EBITDA +16.5%, ooEBITDA margin 62.5%, free cash flow +13.4%. AI is being used to improve search, CRM workflows, and user engagement.',
@@ -1315,7 +1315,7 @@ function seedData() {
       break_thesis:'Subscription growth slows materially\nAgent customer growth stalls or ARPU weakens\nGroup revenue growth drops below ~8-10% sustainably\nooEBITDA margin falls below ~58-60% without clear reinvestment reason\nLead / transaction-related products weaken sharply\nSpain / acquisition integration damages focus or margin structure\nNetwork effects weaken or competitors start taking meaningful share',
       notes:'Tier 1 - 84. Replaced M-Up as cleaner, less discretionary, more macro-resilient alternative.' },
     { id: uid(), ticker:'3769', name:'GMO Payment Gateway', country:'Japan', sector:'Fintech', type:'compounder', status:'active',
-      price:7444, pe:26.6, eps:0, fcf:0, score:80, moat:11, predictability:11, growth_durability:10, revenue_quality:10,
+      price:7444, pe:26.6, eps:280, fcf:0, score:80, moat:11, predictability:11, growth_durability:10, revenue_quality:10,
       balance_sheet:8, growth_strength:7, reinvestment_runway:7, management:6, capital_allocation:5, roce:5, capex_intensity:3,
       dr:'NEUTRAL', target_alloc:7.5, starter_alloc:2.0, t1:'', t2:'', conviction:'high', price_status:'waiting',
       thesis:'Leading payment infrastructure provider in Japan with strong position in online and recurring payments. High-margin, asset-light business with scalable transaction-based and recurring revenue streams. Consistent double-digit earnings growth (~15%+) with operating leverage. Strong moat from deep merchant integration, switching costs, and ecosystem expansion (payments + finance). Benefiting from long-term cashless and e-commerce growth trends in Japan.',
@@ -1323,7 +1323,7 @@ function seedData() {
       break_thesis:'Revenue growth drops below ~8-10% sustainably\nTransaction volume stagnates or declines structurally\nLarge merchants increasingly move payments in-house\nCredit losses increase in Money Service segment\nMargins compress (loss of pricing power or competition)',
       notes:'Tier 1 - 80. Additional upside from Money Service (lending / BNPL) and international expansion.' },
     { id: uid(), ticker:'KSPI', name:'Kaspi.kz', country:'Kazakhstan', sector:'Super App', type:'compounder-opportunistic', status:'active',
-      price:86, pe:7.2, eps:0, fcf:0, score:78, moat:12, predictability:10, growth_durability:10, revenue_quality:10,
+      price:86, pe:7.2, eps:12.0, fcf:0, score:78, moat:12, predictability:10, growth_durability:10, revenue_quality:10,
       balance_sheet:8, growth_strength:7, reinvestment_runway:6, management:6, capital_allocation:5, roce:5, capex_intensity:3,
       dr:'NO', target_alloc:5.0, starter_alloc:1.25, t1:'', t2:'', conviction:'medium', price_status:'waiting',
       thesis:'Kazakhstan super app (payments + marketplace + lending ecosystem). Dominant platform with strong network effects and user lock-in. High profitability, strong cash generation, asset-light model. Moat driven by ecosystem integration (all services in one app). Growth from digital adoption + monetization of user base. Trades at low P/E (~7x) due to country and geopolitical risk. Hybrid: quality compounder + deep value valuation.',
@@ -1331,7 +1331,7 @@ function seedData() {
       break_thesis:'Regulatory environment deteriorates\nCapital controls / restrictions appear\nGrowth stalls materially\nEcosystem dominance weakens',
       notes:'Tier 1.5 - 78. Compounder / Opportunistic. Strong moat, high risk.' },
     { id: uid(), ticker:'XYF', name:'X Financial', country:'China', sector:'Consumer Lending', type:'attack', status:'active',
-      price:0, pe:0, eps:0, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
+      price:0, pe:0, eps:4.6, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
       balance_sheet:0, growth_strength:0, reinvestment_runway:0, management:0, capital_allocation:0, roce:0, capex_intensity:0,
       dr:'NO', target_alloc:15.0, starter_alloc:5.0, t1:'', t2:'', conviction:'speculative', price_status:'waiting',
       thesis:'Would only be executed if confirmed by YRD Report indicator. Chinese consumer lending (fintech), high yield / deep value. Cash-generative with strong shareholder returns (dividends/buybacks). Trades at very low multiple due to China regulatory + sentiment risk. Earnings cyclical, tied to credit quality and macro conditions. YRD used as leading indicator for sector trends (early signal). High upside if sentiment improves / credit stabilizes.',
@@ -1339,7 +1339,7 @@ function seedData() {
       break_thesis:'YRD does not show good buy signal\nRegulation worsens materially\nCredit losses spike',
       notes:'Tier 2. Attack — signal-driven deep value play. 15% target ONLY IF thesis with YRD signal plays out.' },
     { id: uid(), ticker:'OMSE', name:'OMSE', country:'', sector:'Energy Infrastructure', type:'attack', status:'active',
-      price:0, pe:0, eps:0, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
+      price:0, pe:0, eps:1.24, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
       balance_sheet:0, growth_strength:0, reinvestment_runway:0, management:0, capital_allocation:0, roce:0, capex_intensity:0,
       dr:'NO', target_alloc:5.0, starter_alloc:1.25, t1:'', t2:'', conviction:'speculative', price_status:'waiting',
       thesis:'Oil & gas infrastructure (wellheads, OCTG), capex-driven cyclical. Deep value + cyclical hybrid with strong profitability. High margins (~20%+) and solid operating cash flow. Holds ~$3/share cash — large portion of market cap. Core business trading at ~2-3x earnings (ex-cash). Revenue lumpy due to contract timing, but demand intact. Growth via international expansion + contract pipeline.',
@@ -1347,7 +1347,7 @@ function seedData() {
       break_thesis:'Margins collapse\nCash gets burned',
       notes:'Tier 2. Attack — Cyclical / Deep Value.' },
     { id: uid(), ticker:'FLOW', name:'FLOW', country:'', sector:'Market Making', type:'flow', status:'active',
-      price:0, pe:0, eps:0, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
+      price:0, pe:0, eps:3.21, fcf:0, score:0, moat:0, predictability:0, growth_durability:0, revenue_quality:0,
       balance_sheet:0, growth_strength:0, reinvestment_runway:0, management:0, capital_allocation:0, roce:0, capex_intensity:0,
       dr:'YES', target_alloc:20.0, starter_alloc:80.0, t1:'', t2:'', conviction:'core', price_status:'waiting',
       thesis:'Liquidity provider / market maker, profits from volatility and trading volume. Earnings driven by spreads, dislocations, and market activity. Strong cash generation in volatile markets (earnings spikes). Expanding into new products (crypto, fixed income, etc.). Asset-light, scalable trading model with growing capital base. Acts as hedge against market stress / downturns. Not a steady compounder — earnings highly cyclical.',
@@ -1456,7 +1456,7 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
     const portfolio = [
       { id: uid(), ticker:'FLOW', name:'Flow Traders Ltd.', country:'NL', industry:'Market Making / Volatility',
         currency:'EUR', yTicker:'FLOW.AS', invested:173000, currentValue:180972, shares:6600,
-        buyPrice:25.92, currentPrice:27.42, peNow:8.54, purchaseDate:'—',
+        buyPrice:25.92, currentPrice:27.42, peNow:8.54, eps:3.21, purchaseDate:'—',
         notes:'Core strategy engine. Largest position.' },
       { id: uid(), ticker:'FXPO', name:'Ferrexpo PLC', country:'UA', industry:'Metals & Mining',
         currency:'EUR', yTicker:'FXPO.L', invested:45000, currentValue:14712, shares:45976,
@@ -1472,23 +1472,23 @@ At current prices (~20× P/E, ¥4,839), the valuation is fair but not compelling
         notes:'Attack / signal-driven. Chinese consumer finance.' },
       { id: uid(), ticker:'OMSE', name:'OMS Energy Technologies', country:'SG', industry:'Energy Equipment Services',
         currency:'USD', yTicker:'OMSE', invested:5750, currentValue:2787, shares:700,
-        buyPrice:9.41, currentPrice:4.66, peNow:3.76, purchaseDate:'2025-05-29',
+        buyPrice:9.41, currentPrice:4.66, peNow:3.76, eps:1.24, purchaseDate:'2025-05-29',
         notes:'Attack / cyclical deep value.' },
       { id: uid(), ticker:'XYF', name:'X Financial', country:'CN', industry:'Consumer Finance',
         currency:'USD', yTicker:'XYF', invested:16200, currentValue:12327, shares:3000,
-        buyPrice:11.99, currentPrice:4.81, peNow:null, purchaseDate:'2025-10-29',
+        buyPrice:11.99, currentPrice:4.81, peNow:null, eps:4.6, purchaseDate:'2025-10-29',
         notes:'Attack / signal-driven. Awaiting YRD signal confirmation.' },
       { id: uid(), ticker:'3923', name:'Rakus Co., Ltd.', country:'JP', industry:'SaaS',
         currency:'JPY', yTicker:'3923.T', invested:6050, currentValue:6883, shares:1500,
-        buyPrice:752.09, currentPrice:857, peNow:24.97, purchaseDate:'2026-04-13',
+        buyPrice:752.09, currentPrice:857, peNow:24.97, eps:37.9, purchaseDate:'2026-04-13',
         notes:'Core compounder. Starter position.' },
       { id: uid(), ticker:'1INN', name:'Innoscripta SE', country:'DE', industry:'SaaS / Tax Accounting',
         currency:'EUR', yTicker:'1INN.DE', invested:5550, currentValue:5480, shares:80,
-        buyPrice:69.40, currentPrice:68.50, peNow:16.92, purchaseDate:'2026-04-23',
+        buyPrice:69.40, currentPrice:68.50, peNow:16.92, eps:4.05, purchaseDate:'2026-04-23',
         notes:'Core compounder. Starter position.' },
       { id: uid(), ticker:'G24', name:'Scout24 SE', country:'DE', industry:'Digital Real Estate',
         currency:'EUR', yTicker:'G24.DE', invested:4100, currentValue:4260, shares:60,
-        buyPrice:68.45, currentPrice:71.00, peNow:19.96, purchaseDate:'2026-04-28',
+        buyPrice:68.45, currentPrice:71.00, peNow:19.96, eps:3.55, purchaseDate:'2026-04-28',
         notes:'Core compounder. Starter position.' },
     ];
     save('portfolio', portfolio);
@@ -1721,7 +1721,12 @@ async function refreshPortfolioPrices() {
       const nativePrice = priceMap[p.yTicker];
       p.currentPrice = nativePrice;
       p.currentValue = toEur(nativePrice, p.currency) * p.shares;
-      if (peMap[p.yTicker]) p.peNow = peMap[p.yTicker];
+      // Live PE: try Twelve Data first, fallback to price/eps
+      if (peMap[p.yTicker]) {
+        p.peNow = parseFloat(peMap[p.yTicker].toFixed(1));
+      } else if (p.eps && p.eps > 0) {
+        p.peNow = parseFloat((nativePrice / p.eps).toFixed(1));
+      }
       updatedCount++;
     });
 
@@ -1753,8 +1758,14 @@ async function refreshPortfolioPrices() {
     let candidatesUpdated = 0;
     stocks.forEach(s => {
       const yT = candidateMap[s.ticker];
+      // Try Twelve Data P/E first
       if (yT && peMap[yT]) {
         s.pe = parseFloat(peMap[yT].toFixed(1));
+        candidatesUpdated++;
+      }
+      // Fallback: compute from price ÷ eps if we have both
+      else if (yT && priceMap[yT] && s.eps && s.eps > 0) {
+        s.pe = parseFloat((priceMap[yT] / s.eps).toFixed(1));
         candidatesUpdated++;
       }
     });
